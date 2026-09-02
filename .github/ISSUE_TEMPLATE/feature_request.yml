@@ -1,0 +1,29 @@
+name: Feature request
+description: 提议一个可复用的改进
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 当前工作流哪里受阻，谁会受益？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+    validations:
+      required: true
+  - type: dropdown
+    id: interface
+    attributes:
+      label: 影响入口
+      options:
+        - Web UI
+        - MCP Server
+        - Codex Skill
+        - Core / all interfaces
+    validations:
+      required: true
