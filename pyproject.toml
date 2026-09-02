@@ -1,9 +1,9 @@
 [project]
 name = "novel-workspace-mcp"
-version = "2.2.0"
+version = "2.2.1"
 description = "AI 长篇小说工作空间管理系统 - MCP Server (v2 全功能版)"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
     "mcp>=1.0.0",
@@ -21,6 +21,20 @@ dependencies = [
 
 [project.scripts]
 novel-server = "novel_server:run"
+
+[tool.setuptools]
+packages = ["core", "ui", "ui.routes", "plugins"]
+py-modules = [
+    "config",
+    "llm_client",
+    "novel_server",
+    "storage_utils",
+    "vector_store",
+    "writing_index",
+]
+
+[tool.setuptools.package-data]
+ui = ["templates/*.html", "static/*.css", "static/*.js", "static/modules/*.js"]
 
 [tool.ruff]
 line-length = 120
