@@ -37,7 +37,7 @@ Novel Workspace MCP は、長編フィクションのための本格的な AI �
 
 ![Novel Workspace MCP アーキテクチャ](docs/architecture/overview.svg)
 
-[▶ 90 秒のプロダクトデモ（MP4）](docs/assets/demo.mp4) · [デモ台本](docs/demo.md)
+[▶ 11 秒のプロダクト予告（MP4）](docs/assets/demo.mp4) · [90 秒デモ台本](docs/demo.md)
 
 ```bash
 uv sync

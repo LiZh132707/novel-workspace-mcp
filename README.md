@@ -171,7 +171,7 @@
 
 ![Novel Workspace MCP 架构图](docs/architecture/overview.svg)
 
-[▶ 查看 90 秒产品演示视频（MP4）](docs/assets/demo.mp4) · [演示脚本](docs/demo.md)
+[▶ 查看 11 秒产品预告视频（MP4）](docs/assets/demo.mp4) · [90 秒演示脚本](docs/demo.md)
 
 中英日三语介绍： [English README](README.en.md) · [日本語 README](README.ja.md)
 

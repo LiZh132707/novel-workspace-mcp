@@ -37,7 +37,7 @@ Use a local LM Studio server by default, or connect to any OpenAI-compatible API
 
 ![Novel Workspace MCP architecture](docs/architecture/overview.svg)
 
-[▶ Watch the 90-second product trailer (MP4)](docs/assets/demo.mp4) · [Demo storyboard](docs/demo.md)
+[▶ Watch the 11-second product trailer (MP4)](docs/assets/demo.mp4) · [90-second demo storyboard](docs/demo.md)
 
 See the lightweight [demo storyboard](docs/demo.md) and the [community launch checklist](COMMUNITY.md).
 
