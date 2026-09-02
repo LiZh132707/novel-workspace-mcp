@@ -18,7 +18,12 @@ class StorageManager:
     def _get_lock(self, path: Path) -> FileLock:
         key = str(path.absolute())
         if key not in self._locks:
-            lock_path = path.parent / f".{path.name}.lock"
+            # Keep lock metadata out of the data directory.  This prevents
+            # ``*_working.*`` globs and exports from treating lock files as
+            # user content, while retaining per-file locking semantics.
+            lock_dir = path.parent / ".locks"
+            lock_dir.mkdir(parents=True, exist_ok=True)
+            lock_path = lock_dir / f"{path.name}.lock"
             self._locks[key] = FileLock(str(lock_path), timeout=30)
         return self._locks[key]
 

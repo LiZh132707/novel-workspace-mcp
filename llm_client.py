@@ -40,6 +40,11 @@ SYSTEM_PROMPT_REFERENCE_PATH = Path(MODEL_RUNTIME_CONFIG["system_prompt_referenc
 PID_FILE = Path(__file__).parent / "storage" / "llama-server.pid"
 
 
+def _creation_flags() -> int:
+    """Return the Windows no-console flag when available, else a POSIX-safe 0."""
+    return int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
+
+
 def resolve_model_path() -> tuple[Path, bool]:
     matches = list(LM_STUDIO_MODELS_ROOT.glob(f"**/{GENESIS_MODEL_FILENAME}"))
     complete = [path for path in matches if path.is_file() and path.stat().st_size > 10_000_000_000]
@@ -125,7 +130,7 @@ class LMStudioClient:
             result = subprocess.run(
                 [LMS_PATH, "server", "status", "--json"], capture_output=True,
                 text=True, encoding="utf-8", errors="replace", timeout=10,
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                creationflags=_creation_flags(),
             )
             data = json.loads(result.stdout or "{}")
             if data.get("running") and 1 <= int(data.get("port", 0)) <= 65535:
@@ -136,7 +141,7 @@ class LMStudioClient:
             result = subprocess.run(
                 [LMS_PATH, "server", "status"], capture_output=True,
                 text=True, encoding="utf-8", errors="replace", timeout=10,
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                creationflags=_creation_flags(),
             )
             match = re.search(r"\bport\s+(\d{1,5})\b", result.stdout or "", re.IGNORECASE)
             if match and 1 <= int(match.group(1)) <= 65535:
@@ -210,7 +215,7 @@ class LMStudioClient:
             result = subprocess.run(
                 ["powershell", "-NoProfile", "-Command", script], capture_output=True,
                 text=True, encoding="utf-8", errors="replace", timeout=10,
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                creationflags=_creation_flags(),
             )
             return result.returncode == 0
         except Exception:
@@ -237,7 +242,7 @@ class LMStudioClient:
                 return
             if attempt == 8:
                 try:
-                    subprocess.run([LMS_PATH, "server", "stop"], capture_output=True, timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
+                    subprocess.run([LMS_PATH, "server", "stop"], capture_output=True, timeout=15, creationflags=_creation_flags())
                 except Exception:
                     pass
             time.sleep(0.5)
@@ -256,8 +261,8 @@ class LMStudioClient:
             self._reuse_direct_server()
             return
         try:
-            subprocess.run([LMS_PATH, "server", "stop"], capture_output=True, timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
-            subprocess.run([LMS_PATH, "unload", "--all"], capture_output=True, timeout=60, creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.run([LMS_PATH, "server", "stop"], capture_output=True, timeout=15, creationflags=_creation_flags())
+            subprocess.run([LMS_PATH, "unload", "--all"], capture_output=True, timeout=60, creationflags=_creation_flags())
         except Exception:
             pass
         self._wait_port_released()
@@ -290,7 +295,7 @@ class LMStudioClient:
             self._server_log = open(log_path, "a", encoding="utf-8")
             self._server_process = subprocess.Popen(
                 command, cwd=os.path.dirname(LLAMA_SERVER_PATH), stdout=self._server_log,
-                stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW, env=server_env,
+                stderr=subprocess.STDOUT, creationflags=_creation_flags(), env=server_env,
             )
             PID_FILE.parent.mkdir(parents=True, exist_ok=True)
             PID_FILE.write_text(str(self._server_process.pid), "utf-8")
@@ -322,7 +327,7 @@ class LMStudioClient:
             return
         cmd = [LMS_PATH, "server", "start", "--port", str(DEFAULT_PORT), "--cors"]
         try:
-            r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30, creationflags=subprocess.CREATE_NO_WINDOW)
+            r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30, creationflags=_creation_flags())
             if r.returncode == 0 or "already" in r.stderr.lower():
                 self._set_server_port(self._discover_server_port() or DEFAULT_PORT)
                 self._server_started = True
@@ -377,7 +382,7 @@ class LMStudioClient:
             result = subprocess.run(
                 ["powershell", "-NoProfile", "-Command", script], capture_output=True,
                 text=True, encoding="utf-8", errors="replace", timeout=10,
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                creationflags=_creation_flags(),
             )
             executable = result.stdout.strip().strip('"')
             return pid if result.returncode == 0 and self._is_expected_server_path(executable) else None
@@ -402,7 +407,7 @@ class LMStudioClient:
             except Exception:
                 return []
         try:
-            result = subprocess.run([LMS_PATH, "ps", "--json"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
+            result = subprocess.run([LMS_PATH, "ps", "--json"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15, creationflags=_creation_flags())
             data = json.loads(result.stdout or "[]")
             return data if isinstance(data, list) else data.get("models", data.get("data", []))
         except Exception:
@@ -445,7 +450,7 @@ class LMStudioClient:
             result = subprocess.run(
                 [LMS_PATH, "unload", self.model_key], capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=60,
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                creationflags=_creation_flags(),
             )
             combined = ((result.stdout or "") + "\n" + (result.stderr or "")).lower()
             if result.returncode != 0 and "not loaded" not in combined and "未加载" not in combined:
