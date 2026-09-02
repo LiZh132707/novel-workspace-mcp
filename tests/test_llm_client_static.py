@@ -2,6 +2,7 @@ import json
 
 import httpx
 import pytest
+import config
 
 from llm_client import LMStudioClient, detect_generation_loop
 
@@ -108,3 +109,26 @@ def test_api_mode_uses_openai_compatible_endpoint_and_auth_without_local_only_fi
         assert "chat_template_kwargs" not in payload
     finally:
         client.close()
+
+
+def test_api_mode_rejects_service_without_configured_model():
+    def handler(_request: httpx.Request):
+        return httpx.Response(200, json={"data": [{"id": "different-model"}]})
+
+    client = LMStudioClient(provider="api", base_url="http://test/v1", model="wanted-model")
+    client._client = httpx.Client(base_url=client.base_url, transport=httpx.MockTransport(handler))
+    try:
+        assert client.is_available() is False
+    finally:
+        client.close()
+
+
+def test_dotenv_loader_is_optional_and_does_not_override_existing_environment(tmp_path, monkeypatch):
+    dotenv = tmp_path / ".env"
+    dotenv.write_text("NOVEL_TEST_DOTENV='from-file'\nNOVEL_TEST_EXISTING=from-file\n", encoding="utf-8")
+    monkeypatch.setattr(config, "__file__", str(tmp_path / "config.py"))
+    monkeypatch.setenv("NOVEL_TEST_EXISTING", "from-environment")
+    monkeypatch.delenv("NOVEL_TEST_DOTENV", raising=False)
+    config._load_dotenv()
+    assert config.os.environ["NOVEL_TEST_DOTENV"] == "from-file"
+    assert config.os.environ["NOVEL_TEST_EXISTING"] == "from-environment"

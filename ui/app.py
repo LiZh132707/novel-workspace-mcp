@@ -250,6 +250,7 @@ def get_llm():
     global _llm
     if _llm is not None:
         return _llm
+    client = None
     with _llm_init_lock:
         if _llm is not None:
             return _llm
@@ -268,7 +269,10 @@ def get_llm():
                     performance_manager.record(client.last_metrics, "warmup")
             else:
                 logger.warning("模型服务尚未就绪；请检查后端配置和模型是否可用")
+                client.close()
         except Exception as ex:
+            if client is not None:
+                client.close()
             logger.warning("模型服务连接失败: %s", ex)
     return _llm
 

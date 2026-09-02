@@ -67,6 +67,7 @@ def get_llm():
     with _llm_lock:
         if _llm is not None:
             return _llm
+        client = None
         try:
             from llm_client import LMStudioClient
             client = LMStudioClient()
@@ -75,7 +76,11 @@ def get_llm():
                 if _vs is not None:
                     _vs.embed_func = client.embed
                     _vs._semantic_disabled = False
+            else:
+                client.close()
         except Exception as _ex:
+            if client is not None:
+                client.close()
             logger.debug('LLM init: %s', _ex)
     return _llm
 

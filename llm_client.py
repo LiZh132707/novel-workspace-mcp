@@ -666,7 +666,7 @@ class LMStudioClient:
     def is_available(self) -> bool:
         model_ids = self._loaded_model_ids()
         if self.provider == "api":
-            return bool(model_ids)
+            return any(self.model_key == model_id or self.model_key in model_id for model_id in model_ids)
         return any(self.model_key in model_id for model_id in model_ids)
 
     def __del__(self):

@@ -4,6 +4,32 @@ import sys, logging
 from pathlib import Path
 from typing import Final
 
+
+def _load_dotenv() -> None:
+    """读取项目根目录的 .env，不覆盖宿主进程已注入的环境变量。"""
+    dotenv = Path(__file__).parent / ".env"
+    if not dotenv.is_file():
+        return
+    try:
+        for raw_line in dotenv.read_text("utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip()
+            if not key or key.startswith("#"):
+                continue
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+                value = value[1:-1]
+            os.environ.setdefault(key, value)
+    except OSError:
+        # .env 是可选配置；读取失败不应阻止本地默认模式启动。
+        return
+
+
+_load_dotenv()
+
 PROJECT_ROOT: Final[Path] = Path(__file__).parent.resolve()
 STORAGE_ROOT: Final[Path] = PROJECT_ROOT / "storage"
 NOVELS_ROOT: Final[Path] = STORAGE_ROOT / "novels"
