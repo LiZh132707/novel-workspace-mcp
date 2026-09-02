@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Novel Workspace MCP architecture</title>
+  <desc id="desc">Three user interfaces share one orchestration layer, project state, and local or API model backends.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#090d16"/><stop offset="1" stop-color="#111827"/></linearGradient>
+    <linearGradient id="accent" x1="0" x2="1"><stop stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity=".35"/></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker>
+    <style>
+      .label{font:600 18px Inter,Segoe UI,sans-serif;fill:#f8fafc}.sub{font:400 13px Inter,Segoe UI,sans-serif;fill:#a5b4fc}.body{font:400 14px Inter,Segoe UI,sans-serif;fill:#cbd5e1}.tiny{font:400 12px Inter,Segoe UI,sans-serif;fill:#94a3b8}.box{fill:#111827;stroke:#334155;stroke-width:1.5}.pill{fill:#172033;stroke:#475569;stroke-width:1}.line{fill:none;stroke:#64748b;stroke-width:2;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1200" height="720" rx="28" fill="url(#bg)"/>
+  <text x="64" y="72" class="label" font-size="30">Novel Workspace MCP</text>
+  <text x="64" y="101" class="sub" font-size="16">Three interfaces · one auditable long-form writing state</text>
+
+  <rect x="64" y="160" width="250" height="112" rx="18" class="box" filter="url(#shadow)"/>
+  <text x="88" y="198" class="label">Local Web Studio</text><text x="88" y="224" class="body">Planning · drafting · review</text><text x="88" y="247" class="tiny">Browser / FastAPI</text>
+  <rect x="64" y="304" width="250" height="112" rx="18" class="box" filter="url(#shadow)"/>
+  <text x="88" y="342" class="label">MCP Server</text><text x="88" y="368" class="body">70+ state-aware tools</text><text x="88" y="391" class="tiny">Codex · Claude · LM Studio</text>
+  <rect x="64" y="448" width="250" height="112" rx="18" class="box" filter="url(#shadow)"/>
+  <text x="88" y="486" class="label">Codex Skill</text><text x="88" y="512" class="body">$novel-workspace</text><text x="88" y="535" class="tiny">Guided, reproducible workflows</text>
+
+  <path d="M314 216 H390" class="line"/><path d="M314 360 H390" class="line"/><path d="M314 504 H390" class="line"/>
+  <rect x="390" y="178" width="350" height="330" rx="24" fill="#101827" stroke="url(#accent)" stroke-width="2" filter="url(#shadow)"/>
+  <text x="425" y="222" class="label">Orchestration Layer</text><text x="425" y="249" class="sub">Shared contracts and safeguards</text>
+  <rect x="425" y="276" width="280" height="42" rx="12" class="pill"/><text x="445" y="303" class="body">Chapter pipeline &amp; task queue</text>
+  <rect x="425" y="332" width="280" height="42" rx="12" class="pill"/><text x="445" y="359" class="body">Context, facts &amp; continuity</text>
+  <rect x="425" y="388" width="280" height="42" rx="12" class="pill"/><text x="445" y="415" class="body">Quality gates &amp; review queue</text>
+  <rect x="425" y="444" width="280" height="42" rx="12" class="pill"/><text x="445" y="471" class="body">Safe writes, savepoints, recovery</text>
+
+  <path d="M740 260 H820" class="line"/><path d="M740 420 H820" class="line"/>
+  <rect x="820" y="194" width="300" height="132" rx="18" class="box" filter="url(#shadow)"/>
+  <text x="850" y="233" class="label">Project State</text><text x="850" y="259" class="body">World · characters · chapters</text><text x="850" y="282" class="body">Timeline · facts · foreshadowing</text><text x="850" y="305" class="tiny">SQLite + JSON + Markdown</text>
+  <rect x="820" y="364" width="300" height="132" rx="18" class="box" filter="url(#shadow)"/>
+  <text x="850" y="403" class="label">Model Adapter</text><text x="850" y="429" class="body">LM Studio · OpenAI-compatible API</text><text x="850" y="452" class="body">Chat + embeddings · one backend</text><text x="850" y="475" class="tiny">Local-first, provider-neutral</text>
+  <path d="M970 326 V364" class="line"/>
+
+  <rect x="64" y="624" width="1056" height="46" rx="12" fill="#0b1220" stroke="#1e293b"/>
+  <text x="88" y="653" class="tiny">Privacy by default: runtime data, logs, model assets and secrets stay outside the public source history.</text>
+</svg>

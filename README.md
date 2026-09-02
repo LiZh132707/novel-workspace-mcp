@@ -1,4 +1,13 @@
-# novel-workspace-mcp v2.2
+# 墨境 · Novel Workspace MCP
+
+[![CI](https://github.com/LiZh132707/novel-workspace-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/LiZh132707/novel-workspace-mcp/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/LiZh132707/novel-workspace-mcp?display_name=tag&sort=semver)](https://github.com/LiZh132707/novel-workspace-mcp/releases)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+**中文 · [English](README.en.md) · [日本語](README.ja.md)**
+
+> 从一个想法，到一部长篇小说。From idea to an entire novel.
 
 > Web 工作台现已升级为单页全自动创作系统。MCP 工具仍保持兼容。
 
@@ -156,6 +165,16 @@
 
 ## 快速开始
 
+### 产品预览
+
+![墨境本地写作工作台](docs/assets/web-studio.png)
+
+![Novel Workspace MCP 架构图](docs/architecture/overview.svg)
+
+[▶ 查看 90 秒产品演示视频（MP4）](docs/assets/demo.mp4) · [演示脚本](docs/demo.md)
+
+中英日三语介绍： [English README](README.en.md) · [日本語 README](README.ja.md)
+
 ### 选择模型后端
 
 复制 `.env.example` 为 `.env`，按需选择后端（`.env` 不会提交到 Git）：
@@ -189,6 +208,18 @@ uv run python ui/app.py
 ```
 
 浏览器打开 `http://127.0.0.1:8765`。页面中的创作、设定、人物、章节和时间线均在同一个工作台内；首次点击 AI 功能时会连接并加载本地 LM Studio 模型。
+
+也可以使用一键脚本或 Docker：
+
+```powershell
+.\scripts\start.ps1
+```
+
+```bash
+docker compose up --build
+```
+
+`docker-compose.yml` 默认连接宿主机的 OpenAI-compatible endpoint；数据通过 `novel_workspace_storage` 卷持久化。若使用本地 LM Studio，请在 `.env` 中配置可被容器访问的地址。
 
 ### Codex Skill
 

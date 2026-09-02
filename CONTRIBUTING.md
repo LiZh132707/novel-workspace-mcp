@@ -22,3 +22,7 @@ uv run pytest -q
 ## 模型后端
 
 通过 `NOVEL_LLM_PROVIDER=local|api` 选择本地 LM Studio 或 OpenAI-compatible API。API 密钥只能通过环境变量注入，不能写入源码、测试样例或 CI 日志。
+
+## Codex 维护边界
+
+本项目明确将 Codex 用于 **PR review、Issue triage、release automation**：辅助检查测试、复现问题、整理变更日志和构建发布产物。Codex 不伪造用户活动；外部沟通、合并代码和发布版本仍由维护者审核。完整说明见 [`CODEX_OSS.md`](CODEX_OSS.md)。

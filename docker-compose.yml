@@ -1,0 +1,15 @@
+services:
+  novel-workspace:
+    build: .
+    ports:
+      - "8765:8765"
+    env_file:
+      - .env
+    environment:
+      NOVEL_LLM_PROVIDER: ${NOVEL_LLM_PROVIDER:-api}
+      NOVEL_LLM_BASE_URL: ${NOVEL_LLM_BASE_URL:-http://host.docker.internal:1234/v1}
+    volumes:
+      - novel_workspace_storage:/app/storage
+
+volumes:
+  novel_workspace_storage:
