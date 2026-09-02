@@ -5,8 +5,6 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from filelock import FileLock
-
 from core.ai_contracts import chapter_source_hash
 from storage_utils import StorageManager
 
@@ -18,7 +16,7 @@ class WorkingDraftManager:
 
     def load(self, chapter: int, expected: dict) -> str | None:
         text_path, metadata_path = self._paths(chapter)
-        with FileLock(str(text_path) + ".lock", timeout=30):
+        with self.storage._get_lock(text_path):
             if not text_path.exists():
                 return None
             content = text_path.read_text("utf-8", errors="replace")
@@ -36,7 +34,7 @@ class WorkingDraftManager:
 
     def save(self, chapter: int, content: str, metadata: dict):
         text_path, metadata_path = self._paths(chapter)
-        with FileLock(str(text_path) + ".lock", timeout=30):
+        with self.storage._get_lock(text_path):
             self.storage.atomic_write_text(text_path, content)
             payload = dict(metadata)
             payload.update({
@@ -48,7 +46,7 @@ class WorkingDraftManager:
 
     def clear(self, chapter: int):
         text_path, metadata_path = self._paths(chapter)
-        with FileLock(str(text_path) + ".lock", timeout=30):
+        with self.storage._get_lock(text_path):
             text_path.unlink(missing_ok=True)
             metadata_path.unlink(missing_ok=True)
 
