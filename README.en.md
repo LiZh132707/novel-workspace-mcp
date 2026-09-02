@@ -21,6 +21,8 @@ Novel Workspace MCP is a production-oriented AI writing workspace for long-form 
 
 Use a local LM Studio server by default, or connect to any OpenAI-compatible API. Set `NOVEL_LLM_PROVIDER=local` or `api` in a private `.env` file. API keys never belong in source code, screenshots, or Git history.
 
+The web studio defaults to English. Use the Language menu in the sidebar to switch to Chinese or Japanese; the preference is stored only in your browser. Release notes are maintained in English in [`CHANGELOG.md`](CHANGELOG.md).
+
 ## What it does
 
 - Guided novel creation: premise, world, rules, style, outline, volumes, opening plan, and characters.

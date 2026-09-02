@@ -19,6 +19,8 @@
 
 模型后端支持两种模式：默认连接本地 LM Studio，也可以连接任意 OpenAI-compatible API。两种模式都支持文本生成和向量嵌入。
 
+网页工作台默认使用 English 界面，可在左侧 Language 菜单切换中文或日本語；语言偏好只保存在当前浏览器。版本变更记录见 [`CHANGELOG.md`](CHANGELOG.md)，默认使用 English 编写。
+
 ## Web 工作台主要能力
 
 - 一句话创建小说，AI 分阶段生成世界观、规则、文风、总纲、首章目标和人物。
