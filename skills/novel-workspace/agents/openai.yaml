@@ -1,0 +1,4 @@
+interface:
+  display_name: "Novel Workspace"
+  short_description: "Write and maintain long-form novels with MCP tools"
+  default_prompt: "Use $novel-workspace to manage a novel project, plan chapters, preserve continuity, and review consistency."

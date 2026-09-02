@@ -1,0 +1,8 @@
+.model-card i {
+  background: #77716a;
+}
+
+.model-card i.online {
+  background: #6ab88a;
+  box-shadow: 0 0 0 3px #6ab88a22;
+}

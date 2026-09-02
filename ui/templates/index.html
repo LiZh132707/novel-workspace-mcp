@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>墨境 · AI 小说工作台</title>
+  <link rel="stylesheet" href="/static/style.css?v=4">
+  <link rel="stylesheet" href="/static/runtime.css?v=1">
+  <link rel="stylesheet" href="/static/dashboard.css?v=1">
+  <link rel="stylesheet" href="/static/model-status.css?v=1">
+</head>
+<body>
+<div id="toast"></div>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><b>墨境</b><span>AI NOVEL STUDIO</span></div>
+    <button class="primary wide" data-action="create">＋ 创建小说</button>
+    <button class="novel-item" id="importBtn"><strong>导入小说 / 项目</strong><small>TXT 或完整项目ZIP</small></button>
+    <button class="novel-item" id="trashBtn"><strong>回收站</strong><small>恢复误删作品</small></button>
+    <button class="novel-item" id="settingsBtn"><strong>设置中心</strong><small>自动化与硬件安全策略</small></button>
+    <div class="section-label">作品</div>
+    <div id="novelList" class="novel-list">
+      {% for novel in novels %}
+      <button class="novel-item{% if current_novel and current_novel.name == novel.name %} active{% endif %}" data-novel="{{ novel.name }}">
+        <strong>{{ novel.name }}</strong>
+        <small>{{ novel.chapter_count or 0 }} 章 · {{ novel.total_words or 0 }} 字</small>
+      </button>
+      {% endfor %}
+    </div>
+    <div class="model-card"><i id="sidebarModelDot"></i><div><b>本地模型</b><small id="sidebarModelName">{{ model.name }}</small></div><span id="sidebarModelContext">{{ model.ctx // 1024 }}K</span></div>
+  </aside>
+
+  <main class="main">
+    {% if not current_novel %}
+    <section class="welcome">
+      <span class="eyebrow">LOCAL AI · PRIVATE WRITING</span>
+      <h1>从一个想法，到一部长篇小说</h1>
+      <p>设定、人物、章节、时间线都在一个页面完成。</p>
+      <button class="primary hero" data-action="create">开始第一部小说</button>
+    </section>
+    {% else %}
+    <header class="topbar">
+      <div><span class="eyebrow">正在创作</span><h1 id="novelTitle">{{ current_novel.name }}</h1></div>
+      <div class="stats"><span><b id="chapterCount">{{ current_novel.state.current_chapter or 0 }}</b> 章节</span><span><b id="wordCount">{{ current_novel.state.total_words or 0 }}</b> 字</span><button class="secondary" id="deleteNovel">移到回收站</button></div>
+    </header>
+
+    <nav class="tabs" id="tabs">
+      <button data-tab="dashboard">仪表盘</button><button class="active" data-tab="write">创作台</button><button data-tab="story">故事设定</button><button data-tab="characters">人物管理</button><button data-tab="chapters">章节管理</button><button data-tab="timeline">时间线</button>
+    </nav>
+
+    <section class="panel" id="panel-dashboard"><div class="page-head"><div><h2>作品仪表盘</h2><p>集中查看进度、风险和后台任务。</p></div><button class="secondary" id="refreshDashboard">刷新</button></div><div id="dashboardStats" class="dashboard-grid"></div><h3>统一审核队列</h3><p class="hint">人物变化、硬设定、时空、质量、事实和历史修改风险统一排列；阻断项不会被自动连载静默越过。</p><div id="reviewQueueStats" class="dashboard-grid"></div><div id="reviewQueueList" class="list-card"></div><div class="two"><article class="control-card"><h3>权威设定锁</h3><div class="two"><label>类型<select id="lockKind"><option value="character">人物</option><option value="location">地点</option><option value="item">物品</option><option value="faction">势力</option><option value="relationship">关系</option><option value="world_rule">世界规则</option></select></label><label>名称<input id="lockName" placeholder="人物或规则名称"></label></div><div class="two"><label>字段<input id="lockField" placeholder="身份 / current_status / limit"></label><label>锁定值<input id="lockValue" placeholder="不可静默改变的值"></label></div><label>原因<input id="lockReason" placeholder="为什么必须保持"></label><button type="button" class="primary" id="addCanonicalLock">添加或更新锁</button><div id="canonicalLockList" class="list-card"></div></article><article class="control-card"><h3>故事移动规则</h3><p class="hint">设置地点间最短移动时间后，系统会检查瞬移和行程不足。</p><div class="two"><label>起点<input id="travelFrom"></label><label>终点<input id="travelTo"></label></div><label>最短分钟<input id="travelMinutes" type="number" min="1" value="30"></label><button type="button" class="primary" id="addTravelRule">保存移动规则</button><div id="travelRuleList" class="list-card"></div></article></div><h3>最近任务</h3><div id="dashboardTasks" class="list-card"></div></section>
+
+    <section class="panel active" id="panel-write">
+      <div class="writing-grid">
+        <aside class="brief-card">
+          <div class="card-title"><span>本章导演台</span><button class="text-btn" id="refreshContext">刷新</button></div>
+          <label>下一章目标</label><textarea id="chapterGoal" rows="5" placeholder="例如：主角潜入拍卖会，并发现师父失踪的线索">{{ current_novel.state.next_goal or '' }}</textarea>
+          <label>章前提要</label><div id="currentChapterBrief" class="brief-preview">生成章节时会先根据卷纲与节纲生成提要</div>
+          <label>生成字数</label><select id="targetWords"><option>1000</option><option>3000</option><option selected>5000</option><option>8000</option><option>10000</option><option>15000</option><option>20000</option></select>
+          <details><summary>高级参数</summary><label>创意度 <output id="tempOut">0.70</output></label><input id="temperature" type="range" min="0.1" max="1.5" step="0.05" value="0.70"><label>Top P <output id="topPOut">0.80</output></label><input id="topP" type="range" min="0.1" max="1" step="0.05" value="0.80"></details>
+          <button class="primary wide generate" id="generateBtn">✦ AI 生成下一章</button>
+          <button class="secondary wide" id="continueBtn">根据现有内容续写</button>
+          <button class="secondary wide" id="batchBtn">后台连续生成多章</button>
+          <p class="hint">生成内容不会自动保存，你可以先修改。</p>
+        </aside>
+        <article class="editor-card">
+          <div class="editor-head"><div><span id="editorChapter">第 {{ (current_novel.state.current_chapter or 0) + 1 }} 章</span><small id="generationStatus">等待创作</small></div><div><button class="secondary selection-edit" data-operation="polish">润色选中</button><button class="secondary selection-edit" data-operation="expand">扩写</button><button class="secondary selection-edit" data-operation="dialogue">增强对话</button><button class="secondary selection-edit" data-operation="deai">降低AI味</button><button class="secondary" id="clearBtn">清空</button><button class="primary" id="saveBtn">保存章节</button></div></div>
+          <textarea id="editor" spellcheck="false" placeholder="在这里写作，或点击 AI 生成下一章……"></textarea>
+          <footer><span id="editorWords">0 字</span><span>内容仅保存在本机</span></footer>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-story"><div class="page-head"><div><h2>故事设定与层级规划</h2><p>总纲规定方向，卷纲与节纲规定阶段结果，章节提要保留具体创作空间。</p></div><div><button class="secondary" id="rerunPlan">AI 分阶段重策划</button><button class="primary" id="saveBible">保存设定</button></div></div><label>目标总章节数<input id="storyTargetChapters" type="number" min="5" max="1000" style="max-width:180px"></label><div class="form-grid"><label>世界观<textarea id="world" rows="10"></textarea></label><label>故事大纲<textarea id="outline" rows="10"></textarea></label><label>世界规则<textarea id="rules" rows="8"></textarea></label><label>文风要求<textarea id="style" rows="8"></textarea></label></div><h3>卷纲与节纲</h3><p class="hint">JSON 中可调整每卷、每节覆盖章节和 freedom_space；章节范围必须连续。</p><textarea id="storyVolumes" class="code-area" rows="18"></textarea><h3>章前提要</h3><p class="hint">可修改已生成或开篇预设的章节提要；后续章节会按当前卷纲和节纲滚动生成。</p><textarea id="storyBriefs" class="code-area" rows="18"></textarea></section>
+    <section class="panel" id="panel-characters"><div class="page-head"><div><h2>人物管理</h2><p>AI识别出的变化需要确认后才会修改档案。</p></div><button class="primary" id="addCharacter">＋ 新建人物</button></div><h3>待确认人物变化</h3><div id="characterChanges" class="list-card"></div><h3>人物档案</h3><div id="characterGrid" class="character-grid"></div></section>
+    <section class="panel" id="panel-chapters"><div class="page-head"><div><h2>章节管理</h2><p>点击章节载入编辑；覆盖保存前会自动建立版本。</p></div><div><button class="secondary" id="versionsBtn">历史版本</button><select id="exportFormat"><option value="txt">TXT</option><option value="md">Markdown</option><option value="docx">Word</option><option value="epub">EPUB</option><option value="zip">完整项目ZIP</option></select><button class="primary" id="exportBtn">导出</button></div></div><div id="chapterList" class="list-card"></div></section>
+    <section class="panel" id="panel-timeline"><div class="page-head"><div><h2>时间线、伏笔与事实</h2><p>自动追踪关键事件、待回收伏笔和连续性事实。</p></div><button class="secondary" id="checkConsistency">检查一致性</button></div><h3>伏笔生命周期</h3><div id="foreshadowList" class="list-card"></div><h3>关键事件</h3><div id="timelineList" class="timeline"></div><h3>已确认事实与冲突</h3><div id="factList" class="list-card"></div></section>
+    {% endif %}
+  </main>
+</div>
+<aside class="runtime" id="runtime"><div class="runtime-head"><span><i></i> AI 运行现场</span><span><button id="runtimeCancel">停止任务</button><button id="runtimeToggle">收起</button></span></div><div class="runtime-progress"><b id="runtimeBar"></b></div><div id="runtimeLog" class="runtime-log"><p><time>READY</time> 等待生成任务</p></div></aside>
+
+<dialog id="createDialog"><form method="dialog" class="dialog-card wizard-dialog"><button class="dialog-x" value="cancel">×</button><span class="eyebrow">CONTROLLED STORY PLANNING</span><h2>分阶段推演新小说</h2><div class="wizard-track" id="createWizardTrack"><span class="active">1 源数据</span><span>2 故事设定</span><span>3 人物</span><span>4 总纲分卷</span><span>5 开篇细纲</span></div><div class="wizard-page active" data-create-step="0"><p>先确定不可变的创作边界。后续每一步都可以修改确认。</p><label>书名<div class="input-action"><input id="newName" placeholder="输入书名"><button type="button" class="secondary ai-create">AI 起名</button></div></label><div class="two"><label>类型<input id="newGenre" placeholder="玄幻 / 科幻 / 悬疑"></label><label>预计总章节数<input id="newTargetChapters" type="number" min="5" max="1000" value="100"></label></div><label>核心创意<textarea id="newDescription" rows="3" placeholder="故事最重要的冲突和吸引点"></textarea></label><label>补充想法与禁忌<textarea id="newWorld" rows="4" placeholder="主角、世界、金手指、结局倾向或不希望出现的内容"></textarea></label><label>文风参考文本（可选）<input id="newStyleReference" type="file" accept=".txt,.md,text/plain,text/markdown"><small class="muted">只提取抽象风格特征，不复制原文；最大2MB。</small></label></div><div class="wizard-page" data-create-step="1"><p>AI根据源数据推演故事基础。修改后的内容才会进入下一步。</p><label>故事前提<textarea id="foundationPremise" rows="3"></textarea></label><label>核心主题<textarea id="foundationTheme" rows="2"></textarea></label><div class="two"><label>世界观<textarea id="foundationWorld" rows="9"></textarea></label><label>规则体系<textarea id="foundationRules" rows="9"></textarea></label></div><label>文风规范<textarea id="foundationStyle" rows="6"></textarea></label><label>结局方向<textarea id="foundationEnding" rows="3"></textarea></label></div><div class="wizard-page" data-create-step="2"><p>人物以结构化JSON展示，可直接修改姓名、动机、关系与人物弧。</p><label>主要人物 JSON<textarea id="charactersJson" class="code-area" rows="20"></textarea></label></div><div class="wizard-page" data-create-step="3"><p>总纲与分卷必须完整覆盖目标章节数，不能重叠或缺章。</p><label>全书总纲<textarea id="structureOutline" rows="10"></textarea></label><label>分卷规划 JSON<textarea id="volumesJson" class="code-area" rows="16"></textarea></label></div><div class="wizard-page" data-create-step="4"><p>只详细规划开篇最多12章；后续按分卷目标滚动细化，避免一次生成数百章造成僵化。</p><label>开篇章节细纲 JSON<textarea id="openingJson" class="code-area" rows="20"></textarea></label><label>后续滚动规划规则<textarea id="rollingPlan" rows="4"></textarea></label></div><div class="plan-console" id="planConsole"><div class="plan-status"><span id="planStatus">等待开始</span><b id="planPercent">0%</b></div><div class="runtime-progress"><b id="planBar"></b></div><div id="planLog" class="runtime-log"></div></div><div class="dialog-actions"><button value="cancel" class="secondary">取消</button><button type="button" class="secondary" id="createPrev" style="display:none">上一步</button><button type="button" class="secondary" id="createRegenerate" style="display:none">重新生成本步</button><button type="button" class="primary" id="createNext">生成故事设定</button><button type="button" class="primary" id="createFinish" style="display:none">确认并创建小说</button></div></form></dialog>
+<dialog id="characterDialog"><form method="dialog" class="dialog-card"><button class="dialog-x" value="cancel">×</button><h2 id="characterDialogTitle">新建人物</h2><label>姓名<input id="charName"></label><div class="two"><label>性格概括<textarea id="charPersonality" rows="3"></textarea></label><label>背景<textarea id="charBackground" rows="3"></textarea></label></div><label>人格指纹 JSON<textarea id="charPersonalityProfile" class="code-area" rows="10" placeholder='{"desire":"核心欲望","fear":"深层恐惧","principle":"原则","flaw":"缺点","stress_response":"受压反应","decision_style":"决策方式","social_posture":"社交姿态","speech_habits":"语言习惯","contradiction":"内在矛盾"}'></textarea><small>AI会从行动、选择、对白和受压反应中提取；可在这里人工修正。</small></label><label>能力 / 特长<input id="charAbilities"></label><label>人物关系<textarea id="charRelations" rows="3"></textarea></label><div class="three"><label>人物等级<select id="charRoleTier"><option>主角</option><option selected>重要配角</option><option>次要角色</option><option>NPC</option><option>路人</option></select></label><label>开始参与章节<input id="charAppearanceStart" type="number" min="1" value="1"></label><label>结束参与章节<input id="charAppearanceEnd" type="number" min="0" value="0"><small>0 表示不限制</small></label></div><div class="dialog-actions"><button value="cancel" class="secondary">取消</button><button type="button" class="primary" id="saveCharacter">保存人物</button></div></form></dialog>
+<dialog id="batchDialog"><form method="dialog" class="dialog-card"><button class="dialog-x" value="cancel">×</button><span class="eyebrow">BACKGROUND QUEUE</span><h2>后台连续生成</h2><p>35B模型会严格逐章串行处理，关闭或刷新页面不会丢失任务。</p><div class="two"><label>生成章节数<input id="batchCount" type="number" min="1" max="10" value="3"></label><label>每章目标字数<input id="batchWords" type="number" min="500" max="20000" step="500" value="5000"></label></div><label class="check-row"><input id="batchStopWarning" type="checkbox" checked><span><b>质量异常时自动暂停</b><small>正文过短或混入模型说明时保留草稿，不继续污染后续章节</small></span></label><div class="dialog-actions"><button value="cancel" class="secondary">取消</button><button type="button" class="primary" id="startBatch">加入后台队列</button></div></form></dialog>
+<dialog id="versionsDialog"><form method="dialog" class="dialog-card"><button class="dialog-x" value="cancel">×</button><h2>章节历史版本</h2><p>恢复前也会自动保存当前内容，因此可以再次撤回。</p><div id="versionList" class="list-card"></div><label>版本差异<textarea id="versionDiff" rows="10" readonly placeholder="点击“查看差异”"></textarea></label></form></dialog>
+<dialog id="importDialog"><form method="dialog" class="dialog-card"><button class="dialog-x" value="cancel">×</button><h2>导入小说</h2><label>导入后的小说名称<input id="importName" placeholder="只允许中英文、数字、下划线和连字符"></label><label>文件类型<select id="importType"><option value="txt">已有小说TXT</option><option value="project">完整项目ZIP</option></select></label><label>选择文件<input id="importFile" type="file" accept=".txt,.zip"></label><div class="dialog-actions"><button value="cancel" class="secondary">取消</button><button type="button" class="primary" id="startImport">开始导入</button></div></form></dialog>
+<dialog id="trashDialog"><form method="dialog" class="dialog-card"><button class="dialog-x" value="cancel">×</button><h2>小说回收站</h2><p>删除操作只会移动到这里，不会直接清除文件。</p><div id="trashList" class="list-card"></div></form></dialog>
+<dialog id="settingsDialog"><form method="dialog" class="dialog-card">
+<button class="dialog-x" value="cancel">×</button><h2>设置中心</h2><p>并发固定为1；长章节会更慢，但不会并发压垮32GB内存。</p>
+<div class="two"><label>默认每章字数<input id="settingWords" type="number" min="500" max="20000" step="500"></label><label>默认批量章节数<input id="settingBatch" type="number" min="1" max="10"></label></div>
+<div class="two"><label>创意控制<select id="settingCreativity"><option value="stable">稳健：严格遵循规划</option><option value="balanced">均衡：推进与自由细节兼顾</option><option value="open">开放：允许更多支线与意外</option></select></label><label>章节提交策略<select id="settingCommitMode"><option value="review">稳健：每章确认后提交</option><option value="balanced">均衡：PASS自动提交</option><option value="automatic">全自动：仅FAIL暂停</option></select></label></div>
+<label>速度异常阈值<select id="settingSpeedRatio"><option value="0.6">低于历史均速60%</option><option value="0.7">低于历史均速70%</option><option value="0.8">低于历史均速80%</option></select></label>
+<label class="check-row"><input id="settingStopWarning" type="checkbox"><span><b>质量异常时停止批量任务</b><small>均衡模式下 WARNING 暂停；全自动模式仅 FAIL 暂停</small></span></label>
+<label class="check-row"><input id="settingDraft" type="checkbox"><span><b>自动保存浏览器草稿</b><small>刷新后恢复未正式保存的正文</small></span></label>
+<label class="check-row"><input id="settingWarmup" type="checkbox"><span><b>模型加载后自动预热</b><small>正式创作不再承担冷启动开销</small></span></label>
+<div id="modelSettingsInfo" class="model-settings"></div><div class="dialog-actions"><button value="cancel" class="secondary">取消</button><button type="button" class="primary" id="saveSettings">保存设置</button></div></form></dialog>
+<dialog id="editCompareDialog"><form method="dialog" class="dialog-card"><button class="dialog-x" value="cancel">×</button><h2>局部AI编辑对比</h2><div class="two"><label>原文<textarea id="editOriginal" rows="14" readonly></textarea></label><label>修改稿<textarea id="editRevised" rows="14"></textarea></label></div><div class="dialog-actions"><button value="cancel" class="secondary">保留原文</button><button type="button" class="primary" id="applyEdit">采用修改稿</button></div></form></dialog>
+<script>window.APP_STATE={{ {'novel': current_novel.name if current_novel else None, 'chapter': current_novel.state.current_chapter if current_novel else 0}|tojson }};</script>
+  <script src="/static/modules/causal.js?v=1"></script>
+  <script src="/static/app.js?v=6"></script>
+</body></html>

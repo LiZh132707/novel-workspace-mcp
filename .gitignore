@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local model/runtime assets
+model_assets/
+_video_frames/
+*.gguf
+*.safetensors
+*.bin
+
+# Project data and runtime state
+storage/
+logs/
+*.log
+*.err
+*.pid
+ui/server.log
+ui/server_err.log
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Editor and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
