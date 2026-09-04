@@ -34,7 +34,11 @@ jobs:
         run: python -B -m pytest -q -p no:cacheprovider
 
       - name: Validate CLI
-        run: novel-workspace doctor --json
+        run: |
+          novel-workspace doctor --json
+          novel-workspace config --json
+          novel-workspace skill-path --json
+          novel-workspace backup --json
 
       - name: Validate frontend JavaScript
         run: node --check ui/static/app.js && node --check ui/static/i18n.js

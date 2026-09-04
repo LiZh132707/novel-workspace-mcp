@@ -25,7 +25,62 @@ def test_doctor_reports_machine_readable_success(tmp_path, monkeypatch, capsys):
     report = json.loads(capsys.readouterr().out)
     assert report["status"] == "pass"
     assert report["version"] == __version__
-    assert {item["name"] for item in report["checks"]} >= {"python", "dependencies", "storage", "provider"}
+    assert {item["name"] for item in report["checks"]} >= {
+        "python", "dependencies", "storage", "provider", "web_auth", "cors"
+    }
+
+
+def test_doctor_rejects_unknown_provider(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "STORAGE_ROOT", tmp_path / "storage")
+    monkeypatch.setattr(config, "LLM_PROVIDER", "unknown")
+    report = novel_cli.doctor(check_model=True)
+    assert report["status"] == "fail"
+    assert next(item for item in report["checks"] if item["name"] == "provider")["status"] == "fail"
+    assert next(item for item in report["checks"] if item["name"] == "model")["status"] == "fail"
+
+
+def test_config_command_is_machine_readable_and_sanitized(monkeypatch, capsys):
+    monkeypatch.setattr(config, "LLM_API_KEY", "private-model-key")
+    monkeypatch.setattr(config, "LLM_BASE_URL", "https://user:url-secret@api.example/v1?api_key=query-secret")
+    monkeypatch.setattr(config, "WEB_ACCESS_TOKEN", "private-web-token")
+    assert novel_cli.main(["config", "--json"]) == 0
+    output = capsys.readouterr().out
+    report = json.loads(output)
+    assert report["model"]["api_key_configured"] is True
+    assert report["web"]["access_token_configured"] is True
+    assert "private-model-key" not in output
+    assert "private-web-token" not in output
+    assert "url-secret" not in output
+    assert "query-secret" not in output
+    assert report["model"]["base_url"] == "https://api.example/v1"
+
+
+def test_backup_command_creates_verified_archives(tmp_path, monkeypatch, capsys):
+    novels = tmp_path / "storage" / "novels"
+    novel = novels / "Demo"
+    novel.mkdir(parents=True)
+    (novel / "state.json").write_text("{}", "utf-8")
+    (novel / "chapter.txt").write_text("chapter", "utf-8")
+    monkeypatch.setattr(config, "STORAGE_ROOT", tmp_path / "storage")
+    monkeypatch.setattr(config, "NOVELS_ROOT", novels)
+
+    assert novel_cli.main(["backup", "--novel", "Demo", "--json"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["count"] == 1
+    archive = Path(report["files"][0])
+    assert archive.is_file()
+
+    assert novel_cli.main(["backup", "--novel", "Missing", "--json"]) == 1
+    missing = json.loads(capsys.readouterr().out)
+    assert missing["status"] == "fail"
+
+
+def test_skill_path_command_finds_complete_bundled_skill(capsys):
+    assert novel_cli.main(["skill-path", "--json"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    skill = Path(report["path"])
+    assert (skill / "SKILL.md").is_file()
+    assert (skill / "agents" / "openai.yaml").is_file()
 
 
 def test_runtime_home_can_be_overridden_for_installed_and_container_runs(tmp_path, monkeypatch):

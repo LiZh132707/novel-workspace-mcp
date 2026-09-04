@@ -1,6 +1,10 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "novel-workspace-mcp"
-version = "2.3.0"
+version = "2.4.0"
 description = "Long-form AI writing workspace with Web, MCP, and Codex Skill interfaces"
 readme = "README.md"
 license = "MIT"
@@ -9,6 +13,7 @@ dependencies = [
     "mcp>=1.0.0,<2.0.0",
     "httpx>=0.27.0",
     "chromadb>=0.5.0",
+    "onnxruntime>=1.14.1,<1.24; python_version < '3.11'",
     "filelock>=3.13.0",
     "fastapi>=0.139.0",
     "uvicorn>=0.51.0",
@@ -43,6 +48,10 @@ py-modules = [
 
 [tool.setuptools.package-data]
 ui = ["templates/*.html", "static/*.css", "static/*.js", "static/modules/*.js"]
+
+[tool.setuptools.data-files]
+"share/novel-workspace-mcp/skills/novel-workspace" = ["skills/novel-workspace/SKILL.md"]
+"share/novel-workspace-mcp/skills/novel-workspace/agents" = ["skills/novel-workspace/agents/openai.yaml"]
 
 [tool.ruff]
 line-length = 120

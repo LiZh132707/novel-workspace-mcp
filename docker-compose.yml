@@ -2,13 +2,15 @@ services:
   novel-workspace:
     build: .
     ports:
-      - "8765:8765"
+      - "${NOVEL_WEB_BIND_ADDRESS:-127.0.0.1}:8765:8765"
     environment:
       NOVEL_LLM_PROVIDER: ${NOVEL_LLM_PROVIDER:-api}
       NOVEL_LLM_BASE_URL: ${NOVEL_LLM_BASE_URL:-http://host.docker.internal:1234/v1}
       NOVEL_LLM_API_KEY: ${NOVEL_LLM_API_KEY:-}
       NOVEL_LLM_MODEL: ${NOVEL_LLM_MODEL:-}
       NOVEL_LLM_EMBED_MODEL: ${NOVEL_LLM_EMBED_MODEL:-}
+      NOVEL_WEB_ACCESS_TOKEN: ${NOVEL_WEB_ACCESS_TOKEN:-}
+      NOVEL_WEB_CORS_ORIGINS: ${NOVEL_WEB_CORS_ORIGINS:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

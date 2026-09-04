@@ -116,6 +116,7 @@ from core.release_readiness_manager import ReleaseReadinessManager
 from core.generation_provenance_manager import GenerationProvenanceManager
 from core.production_control_manager import ProductionControlManager
 from ui.routes.causal import create_router as create_causal_router
+from ui.security import AccessTokenMiddleware
 
 ensure_dirs()
 logger = setup_logging()
@@ -1065,10 +1066,17 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Novel Workspace MCP", version=__version__, lifespan=lifespan)
-app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_credentials=True,
-    allow_methods=["*"], allow_headers=["*"],
-)
+if config.WEB_CORS_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(config.WEB_CORS_ORIGINS),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+if config.WEB_CORS_INVALID_ORIGINS:
+    logger.warning("Ignoring invalid Web CORS origins: %s", ", ".join(config.WEB_CORS_INVALID_ORIGINS))
+app.add_middleware(AccessTokenMiddleware, token=config.WEB_ACCESS_TOKEN)
 
 templates = Jinja2Templates(directory=str(PROJECT_ROOT / "ui" / "templates"))
 app.mount("/static", StaticFiles(directory=str(PROJECT_ROOT / "ui" / "static")), name="static")

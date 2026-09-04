@@ -198,10 +198,13 @@ API 密钥只放在环境变量或本地 `.env`，不要写入源码、README、
 
 源码目录运行时，数据默认保存在仓库的 `storage/`；通过 wheel/PyPI 安装时自动使用操作系统用户数据目录。可通过 `NOVEL_WORKSPACE_HOME` 指定独立数据目录。
 
+`novel-workspace config --json` 可输出不含密钥原文的配置诊断；`novel-workspace backup` 会为全部小说创建经过 CRC 校验的原子备份，也可用 `--novel 名称` 只备份一个项目。
+
 ```bash
 cd C:\AI\mcp\novel-workspace-mcp
 uv sync
 uv run novel-workspace doctor
+uv run novel-workspace config
 uv run novel-workspace mcp
 ```
 
@@ -214,6 +217,8 @@ uv run novel-workspace serve
 
 浏览器打开 `http://127.0.0.1:8765`。页面中的创作、设定、人物、章节和时间线均在同一个工作台内；首次点击 AI 功能时会连接并加载本地 LM Studio 模型。
 
+Web 工作台和 Docker Compose 默认只监听宿主机回环地址。需要局域网或反向代理访问时，先设置至少 16 个字符的随机 `NOVEL_WEB_ACCESS_TOKEN`；浏览器使用 HTTP Basic 登录（用户名 `novel`，密码为该令牌），API 客户端也可使用 Bearer 或 `X-Novel-Workspace-Token`。跨域前端必须通过 `NOVEL_WEB_CORS_ORIGINS` 配置精确来源列表，通配符会被拒绝。
+
 也可以使用一键脚本或 Docker：
 
 ```powershell
@@ -224,11 +229,11 @@ uv run novel-workspace serve
 docker compose up --build
 ```
 
-`docker-compose.yml` 默认连接宿主机的 OpenAI-compatible endpoint；数据通过 `novel_workspace_storage` 卷持久化。若使用本地 LM Studio，请在 `.env` 中配置可被容器访问的地址。
+`docker-compose.yml` 默认连接宿主机的 OpenAI-compatible endpoint，并只向 `127.0.0.1` 发布端口；数据通过 `novel_workspace_storage` 卷持久化。若使用本地 LM Studio，请在 `.env` 中配置可被容器访问的地址。
 
 ### Codex Skill
 
-Skill 源码位于 `skills/novel-workspace/`。将该目录安装到 Codex 的 skills 目录后，可用 `$novel-workspace` 触发；Skill 会指导 Codex 优先使用 MCP 工具，并遵守项目的状态、一致性和数据隔离约束。
+Skill 源码位于 `skills/novel-workspace/`，wheel/sdist 也会携带完整资源；源码或安装包均可用 `novel-workspace skill-path` 找到实际目录。将该目录安装到 Codex 的 skills 目录后，可用 `$novel-workspace` 触发；Skill 会指导 Codex 优先使用 MCP 工具，并遵守项目的状态、一致性和数据隔离约束。
 
 例如在 Windows PowerShell 中（目标目录按你的 Codex 安装位置调整）：
 
@@ -253,6 +258,8 @@ Copy-Item -Recurse -Force .\skills\novel-workspace "$env:CODEX_HOME\skills\novel
 ```bash
 uv run pytest -q
 ```
+
+当前 CI 在 Python 3.10 与 3.12 上运行全部 366 项自动化测试，并校验 CLI 与前端 JavaScript 语法。
 
 数据默认保存在 `storage/`：任务数据库为 `storage/tasks.db`，每日备份位于 `storage/backups/`，删除的小说位于 `storage/.trash/`。
 

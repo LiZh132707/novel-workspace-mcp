@@ -1,6 +1,7 @@
 """Global configuration for Novel Workspace MCP."""
+import logging
 import os
-import sys, logging
+import sys
 from pathlib import Path
 from typing import Final
 
@@ -155,6 +156,56 @@ try:
 except ValueError:
     LLM_TIMEOUT: Final[int] = 600
 
+
+def _parse_cors_origins(raw: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Parse exact HTTP(S) origins while rejecting wildcard or path entries."""
+    from urllib.parse import urlsplit
+
+    accepted: list[str] = []
+    rejected: list[str] = []
+    for item in raw.split(","):
+        origin = item.strip().rstrip("/")
+        if not origin:
+            continue
+        parsed = urlsplit(origin)
+        valid = (
+            origin != "*"
+            and parsed.scheme in {"http", "https"}
+            and bool(parsed.netloc)
+            and not parsed.path
+            and not parsed.query
+            and not parsed.fragment
+            and parsed.username is None
+            and parsed.password is None
+        )
+        target = accepted if valid else rejected
+        if origin not in target:
+            target.append(origin)
+    return tuple(accepted), tuple(rejected)
+
+
+def sanitize_service_url(value: str) -> str:
+    """Remove userinfo, query parameters, and fragments from diagnostic URLs."""
+    from urllib.parse import urlsplit, urlunsplit
+
+    parsed = urlsplit(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return "<invalid URL>"
+    hostname = parsed.hostname
+    if ":" in hostname:
+        hostname = f"[{hostname}]"
+    try:
+        port = f":{parsed.port}" if parsed.port is not None else ""
+    except ValueError:
+        return "<invalid URL>"
+    return urlunsplit((parsed.scheme, hostname + port, parsed.path, "", ""))
+
+
+WEB_ACCESS_TOKEN: Final[str] = os.getenv("NOVEL_WEB_ACCESS_TOKEN", "").strip()
+WEB_CORS_ORIGINS, WEB_CORS_INVALID_ORIGINS = _parse_cors_origins(
+    os.getenv("NOVEL_WEB_CORS_ORIGINS", "")
+)
+
 MODEL_CONFIG["model_name"] = LLM_MODEL
 MODEL_CONFIG["embed_model"] = LLM_EMBED_MODEL
 
@@ -221,7 +272,8 @@ LM_STUDIO_MCP_CONFIG: Final[dict] = {
 
 
 def estimate_tokens(text: str) -> int:
-    if not text: return 0
+    if not text:
+        return 0
     chinese = sum(1 for c in text if '\u4e00' <= c <= '\u9fff' or '\u3400' <= c <= '\u4dbf' or '\u3000' <= c <= '\u303f')
     others = len(text) - chinese
     return max(1, int(chinese / MODEL_CONFIG["chars_per_token"] + others / 3.0))
@@ -278,7 +330,7 @@ def get_model_config_report() -> dict:
         runtime.update({"backend": "OpenAI-compatible API", "parameter_source": "环境变量"})
     return {
         "provider": LLM_PROVIDER,
-        "base_url": LLM_BASE_URL,
+        "base_url": sanitize_service_url(LLM_BASE_URL),
         "api_key_configured": bool(LLM_API_KEY),
         "model": c["model_name"],
         "context_window": c["context_window"],
@@ -293,6 +345,17 @@ def get_model_config_report() -> dict:
         "sampling_profiles": MODEL_TASK_PROFILES,
         "runtime": runtime,
         "note": "项目连接 LMS 托管的 Ornith，不覆盖 LM Studio 中的上下文、GPU、CPU专家层、KV、Flash Attention、MTP或聊天模板参数；仅把模型进程绑定到8个物理核心（16逻辑线程）。"
+    }
+
+
+def get_web_config_report() -> dict:
+    """Return Web settings without exposing the configured access token."""
+    return {
+        "access_token_configured": bool(WEB_ACCESS_TOKEN),
+        "access_token_recommended_length": len(WEB_ACCESS_TOKEN) >= 16 if WEB_ACCESS_TOKEN else None,
+        "cors_origins": list(WEB_CORS_ORIGINS),
+        "invalid_cors_origins": list(WEB_CORS_INVALID_ORIGINS),
+        "default_bind_address": "127.0.0.1",
     }
 
 

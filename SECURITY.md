@@ -1,11 +1,25 @@
 # Security Policy
 
+## Supported versions
+
+Security fixes are applied to the latest release. Reproduce a report against the newest version before submitting it whenever practical.
+
 ## Reporting a vulnerability
 
-请不要在公开 Issue 中披露可利用的安全问题。优先使用 GitHub 的 **Report a vulnerability** 私密通道；如果仓库尚未启用私密报告，请先联系维护者并提供最小复现、受影响版本和修复建议。
+Do not disclose an exploitable issue in a public Issue. Prefer GitHub's private **Report a vulnerability** channel. If private reporting is not enabled, contact the maintainer first and include a minimal reproduction, affected version, impact, and suggested remediation.
 
-报告中不要包含真实 API 密钥、私人小说正文、个人路径或完整生产日志。若密钥已经泄露，应立即在对应服务商处撤销并轮换。
+Never include real API keys, private novel text, personal filesystem paths, or complete production logs. Revoke and rotate any credential that may already have been exposed.
 
 ## Scope
 
-重点关注：路径穿越、项目导入/导出边界、提示词或正文数据泄露、API 密钥处理、远程 API 请求、任务队列状态错乱，以及会破坏小说正史或备份的数据完整性问题。
+High-value reports include path traversal, import/export boundary violations, prompt or manuscript disclosure, credential handling, remote provider requests, task-queue state corruption, authentication or CORS errors, and integrity failures affecting canonical project state or backups.
+
+## Deployment guidance
+
+- Keep the default loopback bind for a single-user workstation.
+- Configure `NOVEL_WEB_ACCESS_TOKEN` before exposing the Web Studio to a network.
+- Use exact `NOVEL_WEB_CORS_ORIGINS`; wildcard origins are rejected.
+- Put public deployments behind TLS and a maintained reverse proxy.
+- Keep `.env`, `storage/`, logs, model files, and generated backups outside Git.
+
+The liveness and readiness probes intentionally remain unauthenticated and return only service status, version, and provider type.

@@ -15,7 +15,7 @@ Novel Workspace MCP is a production-oriented AI writing workspace for long-form 
 
 1. **Local web studio** — a focused browser workspace for planning, drafting, reviewing, and exporting.
 2. **MCP server** — a tool surface for LM Studio, Claude Desktop, Codex, and other MCP clients.
-3. **Codex Skill** — install `skills/novel-workspace/` and invoke `$novel-workspace` for state-aware writing workflows.
+3. **Codex Skill** — install `skills/novel-workspace/` and invoke `$novel-workspace` for state-aware writing workflows. Source and package installs can locate it with `novel-workspace skill-path`.
 
 ## Model backends
 
@@ -24,6 +24,8 @@ Use a local LM Studio server by default, or connect to any OpenAI-compatible API
 The web studio defaults to English. Use the Language menu in the sidebar to switch to Chinese or Japanese; the preference is stored only in your browser. Release notes are maintained in English in [`CHANGELOG.md`](CHANGELOG.md).
 
 Source checkouts keep runtime data under the repository for portable local development. Package installations use the operating system's user data directory. Set `NOVEL_WORKSPACE_HOME` to choose an explicit location; model credentials remain in environment variables or a private `.env` file.
+
+`novel-workspace config --json` produces a support-friendly report with paths and provider settings while exposing only whether secrets are configured. `novel-workspace backup` creates CRC-verified, atomic archives for every novel project; add `--novel NAME` to select one project.
 
 ## What it does
 
@@ -48,6 +50,7 @@ See the lightweight [demo storyboard](docs/demo.md) and the [community launch ch
 ```bash
 uv sync
 uv run novel-workspace doctor
+uv run novel-workspace config
 uv run novel-workspace serve
 ```
 
@@ -62,11 +65,24 @@ See [`.env.example`](.env.example) for local/API configuration and the [Chinese 
 For Docker or one-click startup, use `docker compose up --build` or `scripts/start.ps1` / `scripts/start.sh`. Tagged releases are also published to `ghcr.io/lizh132707/novel-workspace-mcp`.
 
 ```bash
-docker run --rm -p 8765:8765 \
+docker run --rm -p 127.0.0.1:8765:8765 \
   -e NOVEL_LLM_PROVIDER=api \
   -e NOVEL_LLM_BASE_URL=http://host.docker.internal:1234/v1 \
   -v novel_workspace_storage:/app/storage \
   ghcr.io/lizh132707/novel-workspace-mcp:latest
+```
+
+### Secure remote access
+
+The CLI and Docker Compose bind the Web Studio to loopback by default. Before publishing it on a LAN or through a reverse proxy, set a random `NOVEL_WEB_ACCESS_TOKEN` of at least 16 characters. Browsers use HTTP Basic authentication (`novel` as the username and the token as the password); API clients may send `Authorization: Bearer <token>` or `X-Novel-Workspace-Token`. `/healthz` and `/readyz` remain public for probes.
+
+Cross-origin access is disabled by default. If a separate frontend needs it, set `NOVEL_WEB_CORS_ORIGINS` to an exact comma-separated allowlist such as `https://studio.example.com`; wildcard origins are rejected. Docker Compose can be deliberately exposed with `NOVEL_WEB_BIND_ADDRESS=0.0.0.0` after access protection is configured.
+
+Create on-demand archives without adding runtime data to Git:
+
+```bash
+uv run novel-workspace backup --json
+uv run novel-workspace backup --novel MyNovel --output-dir /safe/backups
 ```
 
 The release workflow builds wheel and source distributions and attaches them to GitHub Releases. PyPI Trusted Publishing is available as an explicit maintainer action after the PyPI project is linked to this repository.
@@ -78,7 +94,7 @@ python -m pip install -e ".[dev]"
 pytest -q
 ```
 
-CI validates Python 3.10 and 3.12, the CLI doctor, frontend JavaScript syntax, and the full test suite.
+CI validates Python 3.10 and 3.12, the CLI doctor, frontend JavaScript syntax, and all 366 automated tests.
 
 ## Project status
 
