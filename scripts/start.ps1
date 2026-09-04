@@ -3,9 +3,9 @@ Set-Location (Split-Path -Parent $PSScriptRoot)
 
 if (Get-Command uv -ErrorAction SilentlyContinue) {
     uv sync
-    uv run python ui/app.py
+    uv run novel-workspace serve
 } else {
-    Write-Host "uv 未安装，使用当前 Python 环境安装项目依赖..." -ForegroundColor Yellow
+    Write-Host "uv was not found; installing the project into the current Python environment..." -ForegroundColor Yellow
     python -m pip install -e .
-    python ui/app.py
+    novel-workspace serve
 }

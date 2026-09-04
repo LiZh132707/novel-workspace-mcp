@@ -28,6 +28,7 @@ from filelock import FileLock
 import uvicorn
 
 import config
+from version import __version__
 from llm_client import LMStudioClient
 from config import ensure_dirs, setup_logging, MODEL_CONFIG, estimate_tokens
 from storage_utils import StorageManager
@@ -118,7 +119,7 @@ from ui.routes.causal import create_router as create_causal_router
 
 ensure_dirs()
 logger = setup_logging()
-logger.info("UI Server v3.0 starting on port 8765")
+logger.info("Web studio %s initializing", __version__)
 
 storage_mgr = StorageManager(logger)
 workspace = WorkspaceManager(logger)
@@ -218,7 +219,18 @@ GPU_PROTECTED_PROCESSES = {
 }
 
 
+def _creation_flags() -> int:
+    """Return the Windows no-console flag without breaking POSIX hosts."""
+    return int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
+
+
+def _is_windows() -> bool:
+    return os.name == "nt"
+
+
 def _gpu_processes() -> list[dict]:
+    if not _is_windows():
+        return []
     script = r"""
 $samples=(Get-Counter '\GPU Process Memory(*)\Dedicated Usage' -ErrorAction SilentlyContinue).CounterSamples
 $usage=@{}
@@ -230,7 +242,7 @@ $rows | Sort-Object vram_mb -Descending | ConvertTo-Json -Compress
     result = subprocess.run(
         ["powershell", "-NoProfile", "-Command", script], capture_output=True,
         text=True, encoding="utf-8", errors="replace", timeout=15,
-        creationflags=subprocess.CREATE_NO_WINDOW,
+        creationflags=_creation_flags(),
     )
     if result.returncode != 0 or not result.stdout.strip():
         return []
@@ -1038,7 +1050,7 @@ async def lifespan(_app: FastAPI):
     task_store.recover_interrupted(RESUMABLE_TASK_KINDS)
     task_runner.start()
     backup_scheduler.start()
-    logger.info("UI 服务启动 v3.0")
+    logger.info("Web studio %s started", __version__)
     yield
     worker_stopped = task_runner.stop()
     if not worker_stopped:
@@ -1052,7 +1064,7 @@ async def lifespan(_app: FastAPI):
             pass
 
 
-app = FastAPI(title="novel-workspace-mcp UI", version="3.0.0", lifespan=lifespan)
+app = FastAPI(title="Novel Workspace MCP", version=__version__, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_credentials=True,
     allow_methods=["*"], allow_headers=["*"],
@@ -1060,6 +1072,29 @@ app.add_middleware(
 
 templates = Jinja2Templates(directory=str(PROJECT_ROOT / "ui" / "templates"))
 app.mount("/static", StaticFiles(directory=str(PROJECT_ROOT / "ui" / "static")), name="static")
+
+
+@app.get("/healthz", include_in_schema=False)
+async def healthz():
+    """Cheap liveness probe for Docker and process supervisors."""
+    return {"status": "ok", "service": "novel-workspace", "version": __version__}
+
+
+@app.get("/readyz", include_in_schema=False)
+async def readyz():
+    """Validate local storage without contacting the configured model."""
+    try:
+        config.ensure_dirs()
+        ready = config.STORAGE_ROOT.is_dir() and os.access(config.STORAGE_ROOT, os.W_OK)
+    except OSError:
+        ready = False
+    payload = {
+        "status": "ready" if ready else "not_ready",
+        "service": "novel-workspace",
+        "version": __version__,
+        "provider": config.LLM_PROVIDER,
+    }
+    return JSONResponse(payload, status_code=200 if ready else 503)
 
 # 主页面
 @app.get("/", response_class=HTMLResponse)
@@ -3793,13 +3828,19 @@ async def api_gpu_processes():
 @app.get("/api/model/hardware-stats")
 async def api_hardware_stats():
     """返回 Windows 可公开读取的实时 GPU 指标；驱动未暴露的温度/功耗标记为空。"""
+    if not _is_windows():
+        return JSONResponse({"success": True, "stats": {
+            "utilization": None, "dedicated_mb": None, "temperature": None,
+            "power_watts": None, "clock_mhz": None,
+            "note": "GPU telemetry is currently available on Windows only.",
+        }})
     try:
         script = r"""
 $engine=(Get-Counter '\GPU Engine(*)\Utilization Percentage' -ErrorAction SilentlyContinue).CounterSamples | Where-Object {$_.CookedValue -gt 0} | Measure-Object CookedValue -Sum
 $memory=(Get-Counter '\GPU Adapter Memory(*)\Dedicated Usage' -ErrorAction SilentlyContinue).CounterSamples | Where-Object {$_.CookedValue -gt 0} | Measure-Object CookedValue -Maximum
 [pscustomobject]@{utilization=[math]::Round([math]::Min(100,$engine.Sum),1);dedicated_mb=[math]::Round($memory.Maximum/1MB,1)} | ConvertTo-Json -Compress
 """
-        result = await asyncio.to_thread(subprocess.run, ["powershell", "-NoProfile", "-Command", script], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10, creationflags=subprocess.CREATE_NO_WINDOW)
+        result = await asyncio.to_thread(subprocess.run, ["powershell", "-NoProfile", "-Command", script], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10, creationflags=_creation_flags())
         data = json.loads(result.stdout) if result.stdout.strip() else {}
         data.update({"temperature": None, "power_watts": None, "clock_mhz": None, "note": "温度、功耗和频率需 AMD 驱动接口支持；未伪造不可用数据"})
         return JSONResponse({"success": True, "stats": data})
@@ -3809,6 +3850,8 @@ $memory=(Get-Counter '\GPU Adapter Memory(*)\Dedicated Usage' -ErrorAction Silen
 
 @app.post("/api/model/gpu-processes/{pid}/close")
 async def api_close_gpu_process(pid: int):
+    if not _is_windows():
+        return JSONResponse({"success": False, "error": "GPU process management is available on Windows only."}, status_code=409)
     try:
         rows = await asyncio.to_thread(_gpu_processes)
         item = next((row for row in rows if int(row.get("pid", 0)) == pid), None)
@@ -3818,7 +3861,7 @@ async def api_close_gpu_process(pid: int):
             return JSONResponse({"success": False, "error": f"{item.get('name')} 是受保护进程，禁止从项目中关闭"}, status_code=403)
         result = await asyncio.to_thread(
             subprocess.run, ["taskkill", "/PID", str(pid)], capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=10, creationflags=subprocess.CREATE_NO_WINDOW,
+            encoding="utf-8", errors="replace", timeout=10, creationflags=_creation_flags(),
         )
         if result.returncode != 0:
             raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "进程拒绝退出")

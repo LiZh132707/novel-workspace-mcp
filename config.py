@@ -1,17 +1,26 @@
-"""novel-workspace-mcp 全局配置（v2.2）"""
+"""Global configuration for Novel Workspace MCP."""
 import os
 import sys, logging
 from pathlib import Path
 from typing import Final
 
+from version import __version__
+
+
+MODULE_ROOT = Path(__file__).parent.resolve()
+
 
 def _load_dotenv() -> None:
     """读取项目根目录的 .env，不覆盖宿主进程已注入的环境变量。"""
-    dotenv = Path(__file__).parent / ".env"
-    if not dotenv.is_file():
-        return
-    try:
-        for raw_line in dotenv.read_text("utf-8").splitlines():
+    candidates = [Path.cwd() / ".env", Path(__file__).parent.resolve() / ".env"]
+    for dotenv in dict.fromkeys(candidates):
+        if not dotenv.is_file():
+            continue
+        try:
+            lines = dotenv.read_text("utf-8").splitlines()
+        except OSError:
+            continue
+        for raw_line in lines:
             line = raw_line.strip()
             if not line or line.startswith("#") or "=" not in line:
                 continue
@@ -23,18 +32,34 @@ def _load_dotenv() -> None:
             if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
                 value = value[1:-1]
             os.environ.setdefault(key, value)
-    except OSError:
-        # .env 是可选配置；读取失败不应阻止本地默认模式启动。
-        return
+        break
 
 
 _load_dotenv()
 
-PROJECT_ROOT: Final[Path] = Path(__file__).parent.resolve()
-STORAGE_ROOT: Final[Path] = PROJECT_ROOT / "storage"
+PROJECT_ROOT: Final[Path] = MODULE_ROOT
+
+
+def _default_runtime_root(project_root: Path = PROJECT_ROOT) -> Path:
+    override = os.getenv("NOVEL_WORKSPACE_HOME", "").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    if (project_root / "pyproject.toml").is_file():
+        return project_root
+    if os.name == "nt":
+        base = Path(os.getenv("LOCALAPPDATA") or (Path.home() / "AppData" / "Local"))
+        return base / "NovelWorkspaceMCP"
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "NovelWorkspaceMCP"
+    base = Path(os.getenv("XDG_DATA_HOME") or (Path.home() / ".local" / "share"))
+    return base / "novel-workspace-mcp"
+
+
+RUNTIME_ROOT: Final[Path] = _default_runtime_root()
+STORAGE_ROOT: Final[Path] = RUNTIME_ROOT / "storage"
 NOVELS_ROOT: Final[Path] = STORAGE_ROOT / "novels"
 WORKSPACE_FILE: Final[Path] = STORAGE_ROOT / "workspace.json"
-LOG_DIR: Final[Path] = PROJECT_ROOT / "logs"
+LOG_DIR: Final[Path] = RUNTIME_ROOT / "logs"
 
 NOVEL_DIRS: Final[list[str]] = ["bible","outline","chapters","summaries","characters","timeline"]
 BIBLE_FILES: Final[dict[str,str]] = {
@@ -183,7 +208,7 @@ LOG_FORMAT: Final[str] = "[%(asctime)s] %(levelname)-8s %(name)-24s %(message)s"
 LOG_DATE_FORMAT: Final[str] = "%Y-%m-%d %H:%M:%S"
 
 SERVER_NAME: Final[str] = "novel-workspace"
-SERVER_VERSION: Final[str] = "2.2.0"
+SERVER_VERSION: Final[str] = __version__
 SERVER_DESCRIPTION: Final[str] = "AI 长篇小说工作空间管理系统"
 
 LM_STUDIO_MCP_CONFIG: Final[dict] = {
@@ -281,18 +306,22 @@ def setup_logging() -> logging.Logger:
     log_file = LOG_DIR / "novel_server.log"
     logger = logging.getLogger("novel-workspace")
     logger.setLevel(LOG_LEVEL)
+    for handler in logger.handlers:
+        handler.close()
     logger.handlers.clear()
     from logging.handlers import RotatingFileHandler
     fh = RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=5, encoding="utf-8")
     fh.setLevel(LOG_LEVEL)
     fh.setFormatter(logging.Formatter(LOG_FORMAT, LOG_DATE_FORMAT))
     logger.addHandler(fh)
-    ch = logging.StreamHandler(sys.stdout)
+    # MCP stdio reserves stdout for JSON-RPC messages. All human-readable
+    # diagnostics must go to stderr so clients never receive corrupted frames.
+    ch = logging.StreamHandler(sys.stderr)
     ch.setLevel(logging.INFO)
     ch.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
     logger.addHandler(ch)
     r = get_model_config_report()
-    logger.info("启动 | ctx:%d | %d t/s | 默认每章%d字",
+    logger.info("Starting | context:%d | %d t/s | default chapter:%d words",
                 r["context_window"], r["speed_tokens_per_sec"],
                 r["default_target_words"])
     return logger

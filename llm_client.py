@@ -37,7 +37,7 @@ GENESIS_MODEL_FILENAME = "Ornith-1.0-35B-AEON-Ultimate-Uncensored-MTP-APEX-I-Com
 LM_STUDIO_MODELS_ROOT = Path.home() / ".lmstudio" / "models"
 CHAT_TEMPLATE_PATH = Path(MODEL_RUNTIME_CONFIG["chat_template"])
 SYSTEM_PROMPT_REFERENCE_PATH = Path(MODEL_RUNTIME_CONFIG["system_prompt_reference"])
-PID_FILE = Path(__file__).parent / "storage" / "llama-server.pid"
+PID_FILE = STORAGE_ROOT / "llama-server.pid"
 
 
 def _creation_flags() -> int:
@@ -156,7 +156,7 @@ class LMStudioClient:
 
     def _request_seed(self) -> int:
         try:
-            settings = json.loads((Path(__file__).parent / "storage" / "settings.json").read_text("utf-8"))
+            settings = json.loads((STORAGE_ROOT / "settings.json").read_text("utf-8"))
             if settings.get("seed_mode") == "fixed":
                 return max(0, min(2147483647, int(settings.get("fixed_seed", 42))))
         except Exception:

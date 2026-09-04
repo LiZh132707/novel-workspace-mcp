@@ -17,13 +17,21 @@
     zh: {},
     ja: {"墨境":"MoJing","创建小说":"小説を作成","导入小说 / 项目":"小説 / プロジェクトをインポート","回收站":"ゴミ箱","设置中心":"設定","作品":"作品","本地模型":"ローカルモデル","仪表盘":"ダッシュボード","创作台":"執筆スタジオ","故事设定":"ストーリーバイブル","人物管理":"登場人物","章节管理":"章管理","时间线":"タイムライン","开始第一部小说":"最初の小説を始める","从一个想法，到一部长篇小说":"ひとつのアイデアから長編小説へ","刷新":"更新","保存章节":"章を保存","保存设定":"設定を保存","导出":"エクスポート","检查一致性":"整合性を確認","取消":"キャンセル","下一步":"次へ","上一步":"戻る","英文":"English","中文":"中文","日本語":"日本語"}
   };
+  const titles = { en: "MoJing · AI Novel Studio", zh: "墨境 · AI 小说工作台", ja: "MoJing · AI 小説スタジオ" };
   const current = () => localStorage.getItem("novel-ui-language") || "en";
-  function text(node, target) { const source = node.__i18nSource || node.nodeValue; node.__i18nSource = source; const key = source.trim(); const value = (dict[target] || {})[key]; if (value) node.nodeValue = source.replace(key, value); }
+  function text(node, target) {
+    const source = node.__i18nSource || node.nodeValue;
+    node.__i18nSource = source;
+    const key = source.trim();
+    const value = target === "zh" ? key : ((dict[target] || {})[key] || key);
+    node.nodeValue = key ? source.replace(key, value) : source;
+  }
   function apply(root, target) {
     const walker = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT), nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode); nodes.forEach(node => text(node, target));
     (root || document).querySelectorAll?.("[placeholder],[title]").forEach(el => ["placeholder", "title"].forEach(attr => { const source = el.dataset[`i18n${attr}`] || el.getAttribute(attr); if (source) { el.dataset[`i18n${attr}`] = source; el.setAttribute(attr, (dict[target] || {})[source] || source); } }));
     document.documentElement.lang = target === "ja" ? "ja" : target === "zh" ? "zh-CN" : "en";
+    document.title = titles[target] || titles.en;
   }
   function setLanguage(target) { localStorage.setItem("novel-ui-language", target); apply(document.body, target); const select = document.getElementById("languageSelect"); if (select) select.value = target; }
   window.NovelI18n = { setLanguage, apply };

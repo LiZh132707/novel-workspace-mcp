@@ -4,8 +4,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 if command -v uv >/dev/null 2>&1; then
   uv sync
-  exec uv run python ui/app.py
+  exec uv run novel-workspace serve
 else
   python3 -m pip install -e .
-  exec python3 ui/app.py
+  exec novel-workspace serve
 fi

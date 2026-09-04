@@ -1,4 +1,4 @@
-"""novel-workspace-mcp MCP Server v2.2"""
+"""Novel Workspace MCP server."""
 import json, asyncio, threading
 from contextvars import ContextVar
 import mcp.types as types
@@ -49,7 +49,7 @@ from core.story_sandbox_manager import StorySandboxManager
 from core.workflow_engine import list_workflows as registered_workflows
 
 ensure_dirs(); logger = setup_logging()
-logger.info('novel-workspace-mcp v2.2 starting')
+logger.info("Novel Workspace MCP %s starting", SERVER_VERSION)
 
 workspace = WorkspaceManager(logger); storage_mgr = StorageManager(logger)
 event_bus = EventBus(logger); plugin_mgr = PluginManager(config.PROJECT_ROOT / 'plugins', event_bus, logger)

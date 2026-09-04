@@ -2,6 +2,7 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    NOVEL_WORKSPACE_HOME=/app \
     NOVEL_LLM_PROVIDER=api \
     NOVEL_LLM_BASE_URL=http://host.docker.internal:1234/v1
 
@@ -18,4 +19,6 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
 
 EXPOSE 8765
 VOLUME ["/app/storage"]
-CMD ["uvicorn", "ui.app:app", "--host", "0.0.0.0", "--port", "8765"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/healthz', timeout=3).read()"]
+CMD ["novel-workspace", "serve", "--host", "0.0.0.0", "--port", "8765"]

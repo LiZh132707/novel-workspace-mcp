@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**[中文](README.md) · [English](README.en.md) · 日本語**
+**[English](README.md) · [中文](README.zh-CN.md) · 日本語**
 
 > ひとつのアイデアから、長編小説へ。
 
@@ -20,6 +20,8 @@ Novel Workspace MCP は、長編フィクションのための本格的な AI �
 ## モデルバックエンド
 
 既定ではローカルの LM Studio に接続し、OpenAI 互換 API にも切り替えられます。非公開の `.env` で `NOVEL_LLM_PROVIDER=local` または `api` を設定してください。API キーをソースコード、スクリーンショット、Git 履歴に保存しないでください。
+
+ソースチェックアウトではリポジトリ内に実行データを保存し、パッケージ版では OS のユーザーデータディレクトリを使用します。保存先は `NOVEL_WORKSPACE_HOME` で指定できます。
 
 ## 主な機能
 
@@ -41,16 +43,17 @@ Novel Workspace MCP は、長編フィクションのための本格的な AI �
 
 ```bash
 uv sync
-uv run python ui/app.py
+uv run novel-workspace doctor
+uv run novel-workspace serve
 ```
 
 ブラウザで `http://127.0.0.1:8765` を開きます。MCP サーバーは次のコマンドで起動できます。
 
 ```bash
-uv run python novel_server.py
+uv run novel-workspace mcp
 ```
 
-ローカル/API 設定は [`.env.example`](.env.example) を、ツール一覧と詳細仕様は [中国語 README](README.md) を参照してください。
+ローカル/API 設定は [`.env.example`](.env.example) を、ツール一覧と詳細仕様は [中国語 README](README.zh-CN.md) を参照してください。
 
 Docker は `docker compose up --build`、ワンクリック起動は `scripts/start.ps1` または `scripts/start.sh` を使用できます。`publish.yml` は PyPI Trusted Publishing 用の配布物ビルドを備えています。
 
