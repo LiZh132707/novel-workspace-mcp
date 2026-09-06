@@ -9,6 +9,17 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.6.0] - 2026-09-07
+
+### Fixed
+
+- Validated project names stored in trash metadata before restore or compensation, preventing restore-path traversal.
+- Escaped dashboard labels and values before rendering them into HTML.
+
+### Tests
+
+- Added regression coverage for malicious trash metadata and dashboard rendering boundaries.
+
 ## [2.5.0] - 2026-09-07
 
 ### Fixed
@@ -101,6 +112,7 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 
 [Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...HEAD
 [2.5.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...v2.5.0
+[2.6.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.5.0...v2.6.0
 [2.4.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/LiZh132707/novel-workspace-mcp/releases/tag/v2.2.1

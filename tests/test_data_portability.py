@@ -83,3 +83,17 @@ def test_zip_restore_rejects_malformed_state_json():
             assert False, "malformed state.json should fail"
         except ValueError as exc:
             assert "state.json" in str(exc)
+
+
+def test_trash_restore_rejects_malicious_record_name():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        trash = TrashManager(root)
+        entry = trash.root / "20260101_000000_000000_safe"
+        entry.mkdir(parents=True)
+        (entry / ".trash.json").write_text('{"id":"20260101_000000_000000_safe","name":"../outside"}', "utf-8")
+        try:
+            trash.restore(entry.name, root / "novels")
+            assert False, "malicious trash names must be rejected"
+        except ValueError as exc:
+            assert "项目名称" in str(exc)

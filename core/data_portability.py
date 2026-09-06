@@ -42,8 +42,12 @@ class TrashManager:
         if not source.is_dir():
             raise ValueError("回收站项目不存在")
         record = json.loads((source / ".trash.json").read_text("utf-8"))
-        name = record["name"]
-        destination = novels_root / name
+        name = str(record.get("name", ""))
+        self._validate_project_name(name)
+        destination = (novels_root / name).resolve()
+        root = novels_root.resolve()
+        if destination.parent != root:
+            raise ValueError("回收站项目名称导致不安全路径")
         if destination.exists():
             raise ValueError(f"小说《{name}》已经存在，不能恢复")
         (source / ".trash.json").unlink(missing_ok=True)
@@ -54,7 +58,10 @@ class TrashManager:
         trash_id = str(record.get("id", ""))
         self._validate_id(trash_id)
         name = str(record.get("name", ""))
-        source = novels_root / name
+        self._validate_project_name(name)
+        source = (novels_root / name).resolve()
+        if source.parent != novels_root.resolve():
+            raise RuntimeError("回收站恢复补偿路径不安全")
         destination = self.root / trash_id
         if not source.is_dir() or destination.exists():
             raise RuntimeError("回收站恢复补偿失败，目录状态已变化")
@@ -78,6 +85,11 @@ class TrashManager:
     def _validate_id(value: str):
         if not value or ".." in value or "/" in value or "\\" in value:
             raise ValueError("无效的回收站ID")
+
+    @staticmethod
+    def _validate_project_name(value: str):
+        if not re.fullmatch(r"[\w\u4e00-\u9fff-]+", value or ""):
+            raise ValueError("回收站项目名称不安全")
 
 
 class TextNovelImporter:
