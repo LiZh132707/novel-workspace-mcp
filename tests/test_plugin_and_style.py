@@ -6,6 +6,7 @@ import pytest
 
 from core.plugin_manager import BasePlugin, EventBus
 from core.style_preset import StylePresetManager
+from core.character_manager import CharacterManager
 
 
 class DemoPlugin(BasePlugin):
@@ -66,3 +67,12 @@ def test_style_preset_rejects_path_traversal_and_limits_fields():
         assert len(item["description"]) == 1000
         assert len(item["traits"]) == 30
         assert manager.get_preset("克制风格")["builtin"] is False
+
+
+def test_character_reads_and_updates_reject_path_traversal():
+    with tempfile.TemporaryDirectory() as tmp:
+        manager = CharacterManager(Path(tmp), logging.getLogger("test"))
+        with pytest.raises(ValueError):
+            manager.get_character("../state")
+        with pytest.raises(ValueError):
+            manager.update_character("..\\state", personality="x")

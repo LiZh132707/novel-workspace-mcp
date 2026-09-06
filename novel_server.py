@@ -710,7 +710,10 @@ async def call_tool(name: str, arguments: dict) -> list:
         return [types.TextContent(type="text", text=json.dumps(result, ensure_ascii=False, indent=2))]
     except Exception as e:
         logger.error("Tool %s failed: %s", name, e)
-        return [types.TextContent(type="text", text=f"Error: {e}")]
+        return types.CallToolResult(
+            content=[types.TextContent(type="text", text=f"Error: {e}")],
+            isError=True,
+        )
     finally:
         if info_token is not None:
             _bound_novel_info.reset(info_token)

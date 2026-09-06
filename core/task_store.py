@@ -189,7 +189,10 @@ class TaskStore:
             connection.commit()
 
     def finish(self, task_id: str, result: dict | None = None):
-        self._set_final(task_id, "completed", result=result, allowed={"running"})
+        # A shutdown timeout may mark the still-running handler interrupted. If
+        # that handler subsequently finishes, accept its result so restart
+        # recovery cannot execute the same side effects a second time.
+        self._set_final(task_id, "completed", result=result, allowed={"running", "interrupted"})
 
     def fail(self, task_id: str, error: str):
         self._set_final(task_id, "failed", error=error, allowed={"running"})

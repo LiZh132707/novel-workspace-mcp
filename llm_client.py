@@ -21,9 +21,6 @@ from config import (
     STORAGE_ROOT,
 )
 
-for _key in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "all_proxy", "ALL_PROXY"]:
-    os.environ.pop(_key, None)
-
 LMS_PATH = os.getenv("NOVEL_LMS_PATH", r"C:\Program Files\LM Studio\resources\app\.webpack\lms.exe")
 MODEL_KEY = LLM_MODEL or "ornith-1.0-35b-aeon-ultimate-uncensored-mtp-apex-i-compact"
 EMBED_MODEL_KEY = LLM_EMBED_MODEL or "text-embedding-nomic-embed-text-v1.5"
@@ -114,7 +111,9 @@ class LMStudioClient:
                 base_url=self.base_url,
                 timeout=self.timeout,
                 headers=headers,
-                trust_env=False,
+                # Respect standard proxy and CA environment variables for
+                # remote OpenAI-compatible providers.
+                trust_env=True,
             )
         return self._client
 
@@ -223,7 +222,7 @@ class LMStudioClient:
 
     def _is_direct_server(self) -> bool:
         try:
-            response = httpx.get(self.base_url + "/props", timeout=3, trust_env=False)
+            response = httpx.get(self.base_url + "/props", timeout=3)
             return response.status_code == 200
         except Exception:
             return False

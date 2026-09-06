@@ -9,6 +9,22 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.5.0] - 2026-09-07
+
+### Fixed
+
+- Hardened Web Studio project resolution so unregistered or escaping novel names cannot access storage outside the novels root.
+- Validated character names on every read and mutation path to prevent filename traversal.
+- Prevented a timed-out shutdown from re-queuing a handler that later completed, avoiding duplicate side effects.
+- Preserved proxy environment configuration for API users instead of deleting process-wide proxy variables.
+- Excluded symbolic links from complete-project ZIP exports and rejected malformed `state.json` project archives.
+- Kept vector-search results from different novels from colliding when searching across the whole index.
+- Returned protocol-level MCP tool errors with `isError=true`.
+
+### Tests
+
+- Added regression coverage for traversal, malformed imports, and late task completion during shutdown.
+
 ## [2.4.0] - 2026-09-04
 
 ### Added
@@ -84,6 +100,7 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Data-free public repository baseline with local runtime data excluded from Git.
 
 [Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...HEAD
+[2.5.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/LiZh132707/novel-workspace-mcp/releases/tag/v2.2.1

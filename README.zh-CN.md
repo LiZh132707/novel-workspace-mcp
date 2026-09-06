@@ -48,7 +48,7 @@
 |------|------|
 | **用户** | 世界观、总纲、人物设定、风格要求、剧情方向 |
 | **AI (LLM)** | 章节生成（默认每章3000字 ≈ 31秒生成）、自动续写、结构化摘要、人物状态更新 |
-| **MCP** | 46 个工具接口、事务性存储、向量检索、上下文裁剪（24K tokens 分 9 级优先级）、一致性检查 |
+| **MCP** | 89 个工具接口、事务性存储、向量检索、上下文裁剪、一致性检查 |
 
 ## 模型适配
 
@@ -66,7 +66,7 @@
 
 > 请先在 LM Studio 中使用你保存的参数加载 Ornith。项目只启动/连接 LMS API，不覆盖上下文、GPU、CPU专家层、KV、Flash Attention、MTP和聊天模板；连接后会同步实际上下文窗口。
 
-## MCP 工具（70 个）
+## MCP 工具（89 个）
 
 ### 📚 项目管理（4 个）
 | 工具 | 功能 | 参数 |
@@ -325,7 +325,7 @@ uv run pytest -q
 
 ```
 novel-workspace-mcp/
-├── novel_server.py          # MCP Server（78 个工具）
+├── novel_server.py          # MCP Server（89 个工具）
 ├── config.py                # 模型配置、上下文预算
 ├── storage_utils.py         # 事务性存储、备份、文件锁
 ├── llm_client.py            # LM Studio API 客户端

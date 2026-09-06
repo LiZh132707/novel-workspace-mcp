@@ -128,5 +128,12 @@ class ProjectZipRestorer:
                 if target != root and root not in target.parents:
                     raise ValueError("ZIP包含不安全路径")
             archive.extractall(destination)
-        if not (destination / "state.json").exists():
+        state_path = destination / "state.json"
+        if not state_path.is_file():
             raise ValueError("ZIP不是有效的小说项目：缺少state.json")
+        try:
+            state = json.loads(state_path.read_text("utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError("ZIP不是有效的小说项目：state.json损坏") from exc
+        if not isinstance(state, dict):
+            raise ValueError("ZIP不是有效的小说项目：state.json必须是对象")

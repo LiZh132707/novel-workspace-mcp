@@ -202,9 +202,9 @@ class VectorStore:
                     self.logger.warning("语义检索失败，已降级本地全文检索: %s", exc)
         merged = {}
         for item in lexical:
-            merged[(item["chapter"], item["chunk_index"])] = item
+            merged[(item.get("novel", novel), item["chapter"], item["chunk_index"])] = item
         for item in semantic:
-            key = (item["chapter"], item["chunk_index"])
+            key = (item.get("novel", novel), item["chapter"], item["chunk_index"])
             if key in merged:
                 local = merged[key]
                 item["score"] = round(item["score"] * 0.75 + local["score"] * 0.25, 6)

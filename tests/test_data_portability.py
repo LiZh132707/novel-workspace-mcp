@@ -68,3 +68,18 @@ def test_zip_restore_rejects_path_traversal():
             assert False, "path traversal should fail"
         except ValueError:
             pass
+
+
+def test_zip_restore_rejects_malformed_state_json():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        archive = root / "bad-state.zip"
+        with zipfile.ZipFile(archive, "w") as output:
+            output.writestr("state.json", "not-json")
+        destination = root / "restore"
+        destination.mkdir()
+        try:
+            ProjectZipRestorer.extract(archive, destination)
+            assert False, "malformed state.json should fail"
+        except ValueError as exc:
+            assert "state.json" in str(exc)

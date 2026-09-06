@@ -30,6 +30,16 @@ def test_running_tasks_become_interrupted_after_restart():
         assert store.get(task_id)["status"] == "interrupted"
 
 
+def test_late_handler_completion_after_shutdown_mark_is_not_requeued():
+    with tempfile.TemporaryDirectory() as tmp:
+        store = TaskStore(Path(tmp) / "tasks.db")
+        task_id = store.create("测试小说", "demo", "演示", status="running")
+        store.mark_interrupted()
+        store.finish(task_id, {"done": True})
+        assert store.get(task_id)["status"] == "completed"
+        assert store.recover_interrupted({"demo"}) == 0
+
+
 def test_serial_background_runner_completes_queued_task():
     with tempfile.TemporaryDirectory() as tmp:
         store = TaskStore(Path(tmp) / "tasks.db")

@@ -106,6 +106,7 @@ class ExportManager:
                     for file in self.path.rglob("*"):
                         if (
                             not file.is_file()
+                            or file.is_symlink()
                             or self.output in file.parents
                             or file.name.endswith((".lock", ".tmp"))
                         ):

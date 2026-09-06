@@ -406,7 +406,14 @@ def _delete_chapter_index(nm: NovelManager, chapter: int):
 
 
 def get_novel_manager(name: str) -> NovelManager:
+    if not isinstance(name, str) or name not in workspace.data.get("novels", {}):
+        raise HTTPException(404, f"小说 {name} 不存在")
     novel_path = config.NOVELS_ROOT / name
+    try:
+        if novel_path.resolve().parent != config.NOVELS_ROOT.resolve() or not novel_path.is_dir():
+            raise ValueError("小说路径不安全")
+    except OSError as exc:
+        raise HTTPException(404, f"小说目录 {name} 不存在") from exc
     if not novel_path.exists():
         raise HTTPException(404, f"小说目录 {name} 不存在")
     return NovelManager(name, novel_path, logger, storage_mgr)

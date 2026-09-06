@@ -23,11 +23,18 @@ class CharacterManager:
         self.storage = StorageManager(logger)
         self.path.mkdir(parents=True, exist_ok=True)
 
+    @staticmethod
+    def _validate_name(name: str) -> None:
+        import re
+        if not isinstance(name, str) or not re.fullmatch(r"[\w\u4e00-\u9fff]+", name):
+            raise ValueError(f"角色名 {name!r} 包含非法字符")
+
     def create_character(self, name: str, personality: str = "", background: str = "",
                          abilities: str = "", ability_level: str = "凡人",
                          relationships: str = "", status: str = "存活",
                          role_tier: str = "重要配角", appearance_start: int = 1,
                          appearance_end: int = 0, personality_profile: dict | None = None) -> dict:
+        self._validate_name(name)
         from filelock import FileLock
         with FileLock(str(self.path / f"{name}.json") + ".lock", timeout=30):
             return self._create_character(
@@ -85,6 +92,7 @@ class CharacterManager:
         return "重要配角"
 
     def update_character(self, name: str, **kwargs) -> dict:
+        self._validate_name(name)
         char_file = self.path / f"{name}.json"
         from filelock import FileLock
         lock = FileLock(str(char_file) + ".lock", timeout=30)
@@ -124,6 +132,7 @@ class CharacterManager:
 
     def replace_review_derived_state(self, name: str, **fields) -> dict:
         """原子替换由人物审核记录派生的字段，不触发二次历史追加。"""
+        self._validate_name(name)
         allowed = {"current_status", "relationships", "ability_level", "ability_history", "locations"}
         values = {key: value for key, value in fields.items() if key in allowed}
         char_file = self.path / f"{name}.json"
@@ -138,6 +147,7 @@ class CharacterManager:
 
     def get_character(self, name: str) -> Optional[dict]:
         """获取人物档案（事务安全读取）。"""
+        self._validate_name(name)
         char_file = self.path / f"{name}.json"
         data = self.storage.safe_read_json(char_file, None)
         return data if isinstance(data, dict) else None
@@ -180,6 +190,7 @@ class CharacterManager:
 
     def add_event_to_character(self, name: str, event: str):
         """添加重要事件到人物档案。"""
+        self._validate_name(name)
         char_file = self.path / f"{name}.json"
         if not char_file.exists():
             raise ValueError(f"\u4eba\u7269 \'{name}\' \u4e0d\u5b58\u5728")
