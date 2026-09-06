@@ -69,6 +69,14 @@ def test_style_preset_rejects_path_traversal_and_limits_fields():
         assert manager.get_preset("克制风格")["builtin"] is False
 
 
+def test_style_preset_prefer_custom_flag_controls_same_name_precedence():
+    with tempfile.TemporaryDirectory() as tmp:
+        manager = StylePresetManager(Path(tmp), logging.getLogger("test"))
+        manager.save_preset("悬疑推理", "custom", ["custom trait"])
+        assert manager.get_preset("悬疑推理")["builtin"] is True
+        assert manager.get_preset("悬疑推理", prefer_custom=True)["builtin"] is False
+
+
 def test_character_reads_and_updates_reject_path_traversal():
     with tempfile.TemporaryDirectory() as tmp:
         manager = CharacterManager(Path(tmp), logging.getLogger("test"))

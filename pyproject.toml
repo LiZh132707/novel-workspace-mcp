@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "novel-workspace-mcp"
-version = "2.6.0"
+version = "2.7.0"
 description = "Long-form AI writing workspace with Web, MCP, and Codex Skill interfaces"
 readme = "README.md"
 license = "MIT"

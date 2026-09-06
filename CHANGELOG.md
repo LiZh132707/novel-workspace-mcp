@@ -9,6 +9,20 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.7.0] - 2026-09-07
+
+### Added
+
+- `prefer_custom=True` now explicitly selects a custom style preset when it shares a name with a built-in preset.
+
+### Fixed
+
+- Clamped vector-search `top_k` to a safe range and handled invalid values deterministically.
+
+### Tests
+
+- Added regression coverage for style precedence and invalid search limits.
+
 ## [2.6.0] - 2026-09-07
 
 ### Fixed
@@ -113,6 +127,7 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 [Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...HEAD
 [2.5.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...v2.5.0
 [2.6.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.5.0...v2.6.0
+[2.7.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.6.0...v2.7.0
 [2.4.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/LiZh132707/novel-workspace-mcp/releases/tag/v2.2.1

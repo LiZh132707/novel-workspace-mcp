@@ -189,6 +189,10 @@ class VectorStore:
 
     def search(self, query: str, novel: str = None, top_k: int = 5) -> list[dict]:
         """混合搜索；嵌入不可用时仍能返回本地中文块检索结果。"""
+        try:
+            top_k = max(1, min(100, int(top_k)))
+        except (TypeError, ValueError):
+            top_k = 5
         lexical = self._lexical_search(query, novel, max(top_k * 3, top_k))
         semantic = []
         if not self._semantic_disabled:

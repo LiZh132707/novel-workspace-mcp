@@ -83,19 +83,19 @@ class StylePresetManager:
         return results
 
     def get_preset(self, name: str, prefer_custom: bool = False) -> Optional[dict]:
-        """获取风格预设。优先返回自定义（即使与内置同名）。"""
+        """获取风格预设；可选择自定义或内置同名项的优先级。"""
         self._validate_name(name)
         preset_file = self.path / f"{name}.json"
+        custom = None
         if preset_file.exists():
             try:
                 data = json.loads(preset_file.read_text("utf-8"))
                 data["builtin"] = False
-                return data
+                custom = data
             except Exception:
                 pass
-        if name in BUILTIN_STYLES:
-            return {**BUILTIN_STYLES[name], "name": name, "builtin": True}
-        return None
+        builtin = {**BUILTIN_STYLES[name], "name": name, "builtin": True} if name in BUILTIN_STYLES else None
+        return (custom or builtin) if prefer_custom else (builtin or custom)
 
     def save_preset(self, name: str, description: str, traits: list[str],
                     avoid: list[str] = None) -> dict:
