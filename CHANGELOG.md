@@ -9,6 +9,26 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.9.0] - 2026-09-08
+
+### Added
+
+- A shared Web/MCP relationship inspector with directed edges, strength scores, chronological evidence, focal-character and NPC/role filters, and as-of-chapter queries.
+- English, Chinese, and Japanese relationship controls, explicit pagination for large networks, and separate unresolved profile notes instead of invented character nodes.
+- Compatible parsing of simple legacy profile relationships using Western or Chinese separators; chapter queries exclude undated profile prose.
+
+### Fixed
+
+- Backfilled chapters no longer override newer relationship observations in generation context.
+- Relationship ingestion now skips entries explicitly marked `evidence_verified=False` and handles non-finite strength values without crashing.
+- The relationship view retains durable older edges instead of showing only the last 30 change records.
+- Invalid character sorting metadata and stored-name mismatches no longer break roster/network reads.
+
+### Tests
+
+- Verified 402 Python tests and 9 frontend tests, including chapter backfills, directed relationships, NPC appearance ranges, legacy profile compatibility, and Web/MCP parity.
+- Manually verified relationship filtering, historical evidence, and multilingual controls in an isolated Web Studio workspace.
+
 ## [2.8.0] - 2026-09-08
 
 ### Added
@@ -145,7 +165,8 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Chapter planning, continuity checks, timeline, facts, foreshadowing, savepoints, recovery, and export workflows.
 - Data-free public repository baseline with local runtime data excluded from Git.
 
-[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.8.0...HEAD
+[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.9.0...HEAD
+[2.9.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.8.0...v2.9.0
 [2.8.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.7.0...v2.8.0
 [2.5.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...v2.5.0
 [2.6.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.5.0...v2.6.0

@@ -154,7 +154,7 @@ async def list_tools():
         types.Tool(name="update_character", description="update_character: 更新人物", inputSchema={"type":"object","properties":{"name": {"type": "string"}, },"required":["name"]}),
         types.Tool(name="get_character", description="get_character: 获取人物详情", inputSchema={"type":"object","properties":{"name": {"type": "string"}, },"required":["name"]}),
         types.Tool(name="list_characters", description="list_characters: 列出所有人物", inputSchema={"type":"object","properties":{},"required":[]}),
-        types.Tool(name="get_character_network", description="get_character_network: 人物关系图谱", inputSchema={"type":"object","properties":{},"required":[]}),
+        types.Tool(name="get_character_network", description="Inspect directed character relationships, strengths and chapter evidence. Filter by chapter, focal character or role (NPC includes its connected characters). Historical queries exclude undated profile prose; roster metadata uses current profiles.", inputSchema={"type":"object","properties":{"chapter":{"type":"integer","minimum":0},"character":{"type":"string"},"role_tier":{"type":"string","enum":["主角","重要配角","次要角色","NPC","路人"]}},"required":[]}),
         types.Tool(name="add_event", description="add_event: 添加时间线事件", inputSchema={"type":"object","properties":{"chapter": {"type": "integer"}, "time": {"type": "string"}, "location": {"type": "string"}, "event": {"type": "string"}, "characters": {"type": "string"}},"required":["chapter", "time", "location", "event"]}),
         types.Tool(name="query_timeline", description="query_timeline: 查询时间线", inputSchema={"type":"object","properties":{"character": {"type": "string"}, "chapter": {"type": "integer"}, "keyword": {"type": "string"}, "limit": {"type": "integer"}},"required":[]}),
         types.Tool(name="check_consistency", description="check_consistency: 深度一致性检查", inputSchema={"type":"object","properties":{},"required":[]}),
@@ -360,8 +360,8 @@ async def list_characters():
     c = crm().list_characters()
     return "\n".join(f"{i}. {x['name']} [{x['status']}] [{x['ability_level']}] ch{x['last_chapter']}" for i,x in enumerate(c,1)) if c else "Empty"
 
-async def get_character_network():
-    return json.dumps(crm().get_character_network(), ensure_ascii=False, indent=2)
+async def get_character_network(chapter=None, character=None, role_tier=None):
+    return json.dumps(crm().get_character_network(chapter, character, role_tier), ensure_ascii=False, indent=2)
 
 async def add_event(chapter, time, location, event, characters=""):
     cl = [c.strip() for c in characters.split(",") if c.strip()] if characters else []

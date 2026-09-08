@@ -1,0 +1,25 @@
+#relationshipGraph {
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--ink);
+}
+#relationshipGraph .hint { line-height: 1.65; }
+#relationshipFilters { align-items: end; gap: 14px; }
+#relationshipResults .relation-svg {
+  display: block;
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  max-height: 360px;
+}
+#relationshipResults .relation-node circle { fill: #fff; stroke: #867c6e; }
+#relationshipResults .relation-node text { fill: var(--ink); }
+#relationshipResults .list-card { margin: 10px 0; padding: 14px 16px; box-shadow: none; }
+#relationshipResults summary { cursor: pointer; font-size: 14px; font-weight: 600; line-height: 1.6; }
+#relationshipResults p, #relationshipResults li { overflow-wrap: anywhere; white-space: pre-wrap; line-height: 1.65; }
+#relationshipResults ol { padding-left: 24px; }
+#relationshipResults button { margin: 10px 0; }

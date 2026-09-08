@@ -29,6 +29,14 @@ Source checkouts keep runtime data under the repository for portable local devel
 
 ## What it does
 
+### NPC and character relationships
+
+Open **Characters → Character relationships** to inspect directed connections, strength scores (-100 to 100), and expandable chapter evidence. Filter by a focal character, role (including NPC), or an inclusive chapter cutoff. NPC filters also show connected characters; a chapter cutoff respects the configured appearance range of registered characters.
+
+MCP provides the same view through `get_character_network(chapter=10, role_tier="NPC")`; add `character="Bob"` to focus on one NPC. Each filter is optional and combined filters intersect. Current profile metadata is not a historical roster snapshot. Undated relationship prose is shown only in the latest view, and unresolved descriptions remain notes, not invented people. Observations do not substitute for author approval.
+
+Example legacy descriptions: `friend: Bob, Cara: mentor` or `朋友：小明，阿青：导师`. Names must match existing profiles. Recorded chapter relationships take precedence over undated profile descriptions for the same directed pair.
+
 - Guided novel creation: premise, world, rules, style, outline, volumes, opening plan, and characters.
 - Chapter pipeline: brief → plan → draft → quality gate → summary → continuity handoff.
 - Long-form continuity: facts, timeline, character arcs, foreshadowing, causal checks, canonical locks, and travel rules.

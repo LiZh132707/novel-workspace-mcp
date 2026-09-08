@@ -1501,6 +1501,17 @@ async def api_list_chapters(name: str):
 
 # ---- 人物 API ----
 
+@app.get("/api/novels/{name}/character-network")
+async def api_character_network(name: str, chapter: Optional[int] = None,
+                                character: Optional[str] = None, role_tier: Optional[str] = None):
+    try:
+        manager = get_character_manager(get_novel_manager(name))
+        network = await asyncio.to_thread(manager.get_character_network, chapter, character, role_tier)
+        return {"success": True, "network": network}
+    except ValueError as exc:
+        return JSONResponse({"success": False, "error": str(exc)}, status_code=400)
+
+
 @app.get("/api/novels/{name}/characters")
 async def api_list_characters(name: str):
     try:

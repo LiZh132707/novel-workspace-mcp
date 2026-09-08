@@ -150,23 +150,33 @@ class CharacterManager:
         self._validate_name(name)
         char_file = self.path / f"{name}.json"
         data = self.storage.safe_read_json(char_file, None)
+        if isinstance(data, dict):
+            data["name"] = name
         return data if isinstance(data, dict) else None
 
     def list_characters(self, chapter: int | None = None) -> list[dict]:
         result = []
         for f in sorted(self.path.glob("*.json")):
             try:
+                self._validate_name(f.stem)
                 data = json.loads(f.read_text("utf-8"))
+                try:
+                    last_chapter = max(0, int(data.get("last_chapter", 0) or 0))
+                except (TypeError, ValueError, OverflowError):
+                    last_chapter = 0
                 start = max(1, int(data.get("appearance_start", 1) or 1))
                 end = max(0, int(data.get("appearance_end", 0) or 0))
+                role = data.get("role_tier", "重要配角")
+                if not isinstance(role, str) or role not in {"主角", "重要配角", "次要角色", "NPC", "路人"}:
+                    role = "重要配角"
                 if chapter is not None and (chapter < start or (end and chapter > end)):
                     continue
                 result.append({
-                    "name": data.get("name", f.stem),
+                    "name": f.stem,
                     "status": data.get("current_status", "未知"),
                     "ability_level": data.get("ability_level", "未知"),
-                    "last_chapter": data.get("last_chapter", 0),
-                    "role_tier": data.get("role_tier", "重要配角"),
+                    "last_chapter": last_chapter,
+                    "role_tier": role,
                     "appearance_start": start,
                     "appearance_end": end,
                 })
@@ -231,20 +241,7 @@ class CharacterManager:
                 return tier
         return level
 
-    def get_character_network(self) -> dict:
-        """获取人物关系网络（简单版）。"""
-        chars = self.list_characters()
-        network = {"nodes": [], "edges": []}
-        for c in chars:
-            network["nodes"].append({"id": c["name"], "level": c["ability_level"]})
-            data = self.get_character(c["name"])
-            if data and data.get("relationships"):
-                for rel in data["relationships"].split(","):
-                    rel = rel.strip()
-                    if rel:
-                        network["edges"].append({
-                            "from": c["name"],
-                            "to": rel,
-                            "type": "关系",
-                        })
-        return network
+    def get_character_network(self, chapter=None, character=None, role_tier=None) -> dict:
+        """Return typed, directed relationships and evidence without changing profiles."""
+        from core.relationship_network import character_network
+        return character_network(self, chapter, character, role_tier)

@@ -45,4 +45,6 @@ jobs:
           node --check ui/static/app.js
           node --check ui/static/i18n.js
           node --check ui/static/modules/style-presets.js
+          node --check ui/static/modules/relationships.js
           node --test tests/style-presets.test.cjs
+          node --test tests/relationships.test.cjs
