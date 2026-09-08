@@ -23,3 +23,15 @@ def test_chinese_repeated_sentence_openings_are_detected():
     text = "他推开门走进大厅。他推开门看向楼梯。他推开门听见脚步。"
     issues = detect_repeated_openings(text)
     assert issues and issues[0]["count"] == 3
+
+
+def test_short_sentences_count_in_pacing():
+    result = WritingAnalyzer(logging.getLogger("test")).analyze_pacing("好。走！Yes.")
+    assert result["sentences"] == 3
+    assert result["avg_sentence_length"] == 1.7
+
+
+def test_identical_paragraphs_keep_distinct_line_locations():
+    paragraph = "他推开门走进大厅。他推开门看向楼梯。他推开门听见脚步。"
+    issues = detect_repeated_openings("  " + paragraph + "\n\n  " + paragraph)
+    assert [item["line"] for item in issues] == [1, 3]

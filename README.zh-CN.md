@@ -23,6 +23,12 @@
 
 ## Web 工作台主要能力
 
+### v2.11 全书诊断工作台
+
+打开 **仪表盘 → 全书诊断**，查看章节篇幅趋势、目标完成比例、预计阅读时间、缺章、空章、文件名冲突及跨章重复段落的位置。支持章节范围筛选，以及 JSON / Markdown 报告下载。新控件支持中英日文，结构化发现和导出报告使用英文。
+
+命令行：`novel-workspace inspect --novel NAME --json`；MCP：`inspect_manuscript(start_chapter=1, end_chapter=20)`。检查只读、不调用模型、不修改项目字数，原文摘录默认关闭。统计采用汉字、假名和字母/数字词组单位，不等同于存储的字数；重复检查是按非空行进行的空白归一化精确匹配。详见 [使用说明、限制和退出码](docs/MANUSCRIPT_DIAGNOSTICS.md)。
+
 ### v2.10 项目备份管理
 
 点击全书搜索旁的 **项目备份**，可立即备份、查看历史归档、校验完整性及下载 ZIP。校验仅检查文件，不解压、不覆盖小说；下载后可通过导入功能恢复为独立项目。
@@ -66,7 +72,7 @@ MCP 使用 `get_style_preset(name, source="custom", include_rendered=True)` 获�
 |------|------|
 | **用户** | 世界观、总纲、人物设定、风格要求、剧情方向 |
 | **AI (LLM)** | 章节生成（默认每章3000字 ≈ 31秒生成）、自动续写、结构化摘要、人物状态更新 |
-| **MCP** | 89 个工具接口、事务性存储、向量检索、上下文裁剪、一致性检查 |
+| **MCP** | 90 个工具接口、事务性存储、向量检索、上下文裁剪、一致性检查 |
 
 ## 模型适配
 
@@ -84,7 +90,7 @@ MCP 使用 `get_style_preset(name, source="custom", include_rendered=True)` 获�
 
 > 请先在 LM Studio 中使用你保存的参数加载 Ornith。项目只启动/连接 LMS API，不覆盖上下文、GPU、CPU专家层、KV、Flash Attention、MTP和聊天模板；连接后会同步实际上下文窗口。
 
-## MCP 工具（89 个）
+## MCP 工具（90 个）
 
 ### 📚 项目管理（4 个）
 | 工具 | 功能 | 参数 |
@@ -128,11 +134,12 @@ MCP 使用 `get_style_preset(name, source="custom", include_rendered=True)` 获�
 | `index_chapter_to_vector` | 将章节加入向量索引 |
 | `analyze_chapter` | 分析章节写作模式 |
 
-### 📝 写作分析（3 个）
+### 📝 写作分析（4 个）
 | 工具 | 功能 |
 |------|------|
 | `detect_writing_patterns` | AI 指纹检测（21 种模式：重复、高频词、句式单调等） |
 | `analyze_text_pacing` | 文本节奏分析（段落长度、对话密度） |
+| `inspect_manuscript` | 全书篇幅趋势、缺章空章与跨章重复段落诊断 |
 | `extract_style_from_text` | 从文本提取写作风格特征 |
 
 ### 💾 版本管理（4 个）
@@ -343,7 +350,7 @@ uv run pytest -q
 
 ```
 novel-workspace-mcp/
-├── novel_server.py          # MCP Server（89 个工具）
+├── novel_server.py          # MCP Server（90 个工具）
 ├── config.py                # 模型配置、上下文预算
 ├── storage_utils.py         # 事务性存储、备份、文件锁
 ├── llm_client.py            # LM Studio API 客户端

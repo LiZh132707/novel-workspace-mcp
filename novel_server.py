@@ -16,6 +16,7 @@ from core.character_manager import CharacterManager
 from core.timeline_manager import TimelineManager
 from core.consistency_manager import ConsistencyManager
 from core.writing_analyzer import WritingAnalyzer
+from core.manuscript_diagnostics import inspect_manuscript as build_manuscript_report
 from core.savepoint_manager import SavepointManager
 from core.plugin_manager import EventBus, PluginManager
 from core.quality_tracker import QualityTracker
@@ -138,6 +139,14 @@ app = Server(SERVER_NAME)
 @app.list_tools()
 async def list_tools():
     return [
+        types.Tool(name="inspect_manuscript", description="Read-only chapter inventory, length trends, missing/empty chapters and exact cross-chapter repeated paragraphs. No model calls. Excerpts are opt-in; units are not stored word counts.", inputSchema={
+            "type": "object", "properties": {
+                "start_chapter": {"type": "integer", "minimum": 1, "maximum": 1000000},
+                "end_chapter": {"type": "integer", "minimum": 1, "maximum": 1000000},
+                "target_units": {"type": "integer", "minimum": 0, "maximum": 1000000},
+                "units_per_minute": {"type": "integer", "minimum": 1, "maximum": 10000},
+                "min_repeat_chars": {"type": "integer", "minimum": 10, "maximum": 1000},
+                "include_excerpts": {"type": "boolean"}}, "required": []}),
         types.Tool(name="list_novels", description="list_novels: 列出所有小说", inputSchema={"type":"object","properties":{},"required":[]}),
         types.Tool(name="create_novel", description="create_novel: 创建新小说项目", inputSchema={"type":"object","properties":{"name": {"type": "string"}, "genre": {"type": "string"}, "style": {"type": "string"}, "description": {"type": "string"}},"required":["name"]}),
         types.Tool(name="open_novel", description="open_novel: 切换到指定小说", inputSchema={"type":"object","properties":{"name": {"type": "string"}, },"required":["name"]}),
@@ -409,6 +418,15 @@ async def detect_writing_patterns(text):
 
 async def analyze_text_pacing(text):
     return json.dumps(writing_analyzer.analyze_pacing(text), ensure_ascii=False, indent=2)
+
+async def inspect_manuscript(start_chapter=1, end_chapter=None, target_units=0,
+                             units_per_minute=300, min_repeat_chars=40, include_excerpts=False):
+    report = await asyncio.to_thread(build_manuscript_report, nm().path,
+        start_chapter=start_chapter, end_chapter=end_chapter, target_units=target_units,
+        units_per_minute=units_per_minute, min_repeat_chars=min_repeat_chars,
+        include_excerpts=include_excerpts)
+    return json.dumps(report, ensure_ascii=False, indent=2)
+
 
 async def create_savepoint(chapter_number, label=""):
     c = chm().read_chapter(chapter_number)
@@ -758,6 +776,7 @@ HANDLERS = {
     'analyze_chapter': analyze_chapter,
     'detect_writing_patterns': detect_writing_patterns,
     'analyze_text_pacing': analyze_text_pacing,
+    'inspect_manuscript': inspect_manuscript,
     'create_savepoint': create_savepoint,
     'list_savepoints': list_savepoints,
     'restore_savepoint': restore_savepoint,

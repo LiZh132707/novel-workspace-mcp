@@ -29,6 +29,12 @@ Source checkouts keep runtime data under the repository for portable local devel
 
 ## What it does
 
+### Manuscript diagnostics workbench (v2.11)
+
+Open **Dashboard → Manuscript diagnostics** for chapter inventory, length trends, optional length targets, estimated reading time, missing/empty chapters, filename conflicts, and exact cross-chapter repeated paragraphs with chapter/line evidence. Filter an inclusive chapter range and download JSON or Markdown. The controls support English, Chinese, and Japanese; structured findings and exported reports are English.
+
+The same read-only engine is available through MCP `inspect_manuscript(start_chapter=1, end_chapter=20)` and `novel-workspace inspect --novel NAME --json`. It makes no model calls and never rewrites chapters or stored word counts. Excerpts are off by default. See [diagnostic metrics, limits, and CLI examples](docs/MANUSCRIPT_DIAGNOSTICS.md).
+
 ### Inspectable project backups (v2.10)
 
 Click **Project backups** beside the global search button to create a backup, browse existing ZIPs, verify integrity, or download a copy. New controls support English, Chinese, and Japanese. Verification is read-only and never overwrites a novel. Use **Import novel / project** to restore a downloaded archive as a separate project.

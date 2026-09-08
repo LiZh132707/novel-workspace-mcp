@@ -306,9 +306,12 @@ def detect_clusters(text, all_matches):
     return uq
 
 def detect_repeated_openings(text):
-    paras = re.split("\n\\s*\n", text); issues = []
-    for para in paras:
-        para = para.strip()
+    paras = re.split("(\n\\s*\n)", text); issues = []; offset = 0
+    for index, raw in enumerate(paras):
+        start = offset + len(raw) - len(raw.lstrip())
+        offset += len(raw)
+        if index % 2: continue
+        para = raw.strip()
         if not para or para.startswith("#"): continue
         sents = re.split("[.!?\u3002\uff01\uff1f]+", para)
         if len(sents) < 3: continue
@@ -320,7 +323,7 @@ def detect_repeated_openings(text):
                 ops.append(chinese[:4] if chinese else " ".join(s.split()[:3]).lower())
         for op, cnt in Counter(ops).items():
             if cnt >= 3:
-                issues.append({"pattern": "repeated_opening", "count": cnt, "opener": op, "line": text[:text.find(para)].count("\n") + 1, "context": para[:200]})
+                issues.append({"pattern": "repeated_opening", "count": cnt, "opener": op, "line": text[:start].count("\n") + 1, "context": para[:200]})
     return issues
 
 class WritingAnalyzer:
@@ -355,7 +358,7 @@ class WritingAnalyzer:
         if not text or not text.strip(): return {"error": "empty text"}
         paras = [p for p in text.split("\n") if p.strip()]
         sl = re.split("[\u3002\uff01\uff1f.!?\n]+", text)
-        sents = [s.strip() for s in sl if len(s.strip()) > 3]
+        sents = [s.strip() for s in sl if s.strip()]
         if not sents: return {"error": "no valid sentences"}
         pl = [len(p) for p in paras]; sl2 = [len(s) for s in sents]
         ap = sum(pl) / len(pl) if pl else 0; as2 = sum(sl2) / len(sl2) if sl2 else 0

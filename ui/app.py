@@ -42,6 +42,7 @@ from core.character_manager import CharacterManager, ABILITY_TIERS
 from core.timeline_manager import TimelineManager
 from core.consistency_manager import ConsistencyManager
 from core.writing_analyzer import WritingAnalyzer
+from core.manuscript_diagnostics import inspect_manuscript, render_markdown
 from core.ai_contracts import (
     chapter_completion_prompts, chapter_plan_prompts, chapter_prompts, chapter_quality_gate,
     merge_chapter_continuation, parse_object,
@@ -3965,6 +3966,32 @@ async def api_model_profile(request: Request):
         data = performance_manager.save_profile(str(payload.get("name", "balanced")), payload)
         return JSONResponse({"success": True, "performance": data})
     except Exception as exc:
+        return JSONResponse({"success": False, "error": str(exc)}, status_code=400)
+
+
+@app.get("/api/novels/{name}/manuscript-report")
+async def api_manuscript_report(name: str, start_chapter: int = 1, end_chapter: int | None = None,
+                                target_units: int = 0, units_per_minute: int = 300,
+                                min_repeat_chars: int = 40, include_excerpts: bool = False,
+                                format: str = "view"):
+    from fastapi.responses import Response
+
+    novel = get_novel_manager(name)
+    try:
+        if format not in {"view", "json", "markdown"}:
+            raise ValueError("format must be view, json or markdown")
+        report = await asyncio.to_thread(
+            inspect_manuscript, novel.path, start_chapter=start_chapter, end_chapter=end_chapter,
+            target_units=target_units, units_per_minute=units_per_minute,
+            min_repeat_chars=min_repeat_chars, include_excerpts=include_excerpts)
+        if format == "view":
+            return JSONResponse({"success": True, "report": report}, headers={"Cache-Control": "no-store"})
+        body = render_markdown(report) if format == "markdown" else json.dumps(report, ensure_ascii=False, indent=2)
+        extension = "md" if format == "markdown" else "json"
+        return Response(body, media_type="text/markdown" if format == "markdown" else "application/json",
+                        headers={"Content-Disposition": f'attachment; filename="manuscript-report.{extension}"',
+                                 "Cache-Control": "no-store"})
+    except (OSError, ValueError) as exc:
         return JSONResponse({"success": False, "error": str(exc)}, status_code=400)
 
 

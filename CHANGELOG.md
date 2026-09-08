@@ -9,6 +9,25 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.11.0] - 2026-09-08
+
+### Added
+
+- A read-only manuscript diagnostics workbench in Dashboard, with chapter inventory, paginated length trends, optional target percentages, multilingual length units, and configurable reading-time estimates.
+- Missing-range, empty-chapter, noncanonical filename, duplicate-identity, and length-outlier findings, without rewriting manuscript text or stored word counts.
+- Exact cross-chapter repeated-paragraph detection with chapter/line evidence, source hashes, explicit report limits, and opt-in private excerpts.
+- JSON and Markdown report downloads, inclusive chapter filters, English/Chinese/Japanese controls, and documented metric definitions and privacy limits.
+- `novel-workspace inspect` with scriptable JSON, protected new-file export, and distinct partial-scan exit status; MCP `inspect_manuscript` uses the same model-free engine.
+
+### Fixed
+
+- Short sentences are no longer dropped from pacing statistics.
+- Identical paragraphs no longer point every repeated-opening finding to the first occurrence.
+
+### Tests
+
+- Added regression coverage for multilingual counts, chapter gaps, duplicate evidence, resource limits, linked files, changing files, read-only guarantees, CLI/Web/MCP parity, exports, pagination, and escaped rendering.
+
 ## [2.10.0] - 2026-09-08
 
 ### Added
@@ -185,7 +204,8 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Chapter planning, continuity checks, timeline, facts, foreshadowing, savepoints, recovery, and export workflows.
 - Data-free public repository baseline with local runtime data excluded from Git.
 
-[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.10.0...HEAD
+[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.11.0...HEAD
+[2.11.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.10.0...v2.11.0
 [2.10.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.9.0...v2.10.0
 [2.9.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.8.0...v2.9.0
 [2.8.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.7.0...v2.8.0

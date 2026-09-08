@@ -196,6 +196,22 @@ def bundled_skill_path() -> Path:
     raise FileNotFoundError("the bundled novel-workspace Codex Skill is missing")
 
 
+def manuscript_report(novel_name, **options):
+    import config
+    import re
+    from core.workspace_manager import WorkspaceManager
+    from core.manuscript_diagnostics import inspect_manuscript
+
+    workspace = WorkspaceManager(logging.getLogger("novel-workspace.inspect"))
+    if not re.fullmatch(r"[\w\-]+", novel_name) or novel_name not in workspace.data["novels"]:
+        raise ValueError("A registered novel name is required")
+    root = config.NOVELS_ROOT.resolve()
+    path = root / novel_name
+    if path.is_symlink() or path.resolve().parent != root:
+        raise ValueError("Novel path must remain inside the novels directory")
+    return inspect_manuscript(path, **options)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="novel-workspace", description="Novel Workspace MCP command line")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -219,6 +235,16 @@ def build_parser() -> argparse.ArgumentParser:
     inspection = backup.add_mutually_exclusive_group()
     inspection.add_argument("--list", action="store_true", help="list existing backups without creating one")
     inspection.add_argument("--verify", metavar="FILENAME", help="verify a backup in the configured directory without extracting it")
+    inspect = commands.add_parser("inspect", help="read-only manuscript statistics and cross-chapter diagnostics")
+    inspect.add_argument("--novel", required=True, help="exact registered project name")
+    inspect.add_argument("--start-chapter", type=int, default=1)
+    inspect.add_argument("--end-chapter", type=int)
+    inspect.add_argument("--target-units", type=int, default=0, help="optional per-chapter length target")
+    inspect.add_argument("--units-per-minute", type=int, default=300)
+    inspect.add_argument("--min-repeat-chars", type=int, default=40)
+    inspect.add_argument("--include-excerpts", action="store_true", help="include private text snippets in the report")
+    inspect.add_argument("--json", action="store_true", help="emit JSON instead of Markdown")
+    inspect.add_argument("--output", type=Path, help="write a NEW report file outside runtime storage")
     skill_path = commands.add_parser("skill-path", help="print the bundled Codex Skill directory")
     skill_path.add_argument("--json", action="store_true", help="emit JSON for scripts")
     return parser
@@ -253,6 +279,28 @@ def main(argv: list[str] | None = None) -> int:
             report = {"status": "fail", "error": str(exc), "files": []}
         _print_backups(report, args.json)
         return 0 if report["status"] == "pass" else 1
+    if args.command == "inspect":
+        from core.manuscript_diagnostics import render_markdown
+        import config
+
+        try:
+            report = manuscript_report(args.novel, start_chapter=args.start_chapter, end_chapter=args.end_chapter,
+                target_units=args.target_units, units_per_minute=args.units_per_minute,
+                min_repeat_chars=args.min_repeat_chars, include_excerpts=args.include_excerpts)
+            body = json.dumps(report, ensure_ascii=False, indent=2) if args.json else render_markdown(report)
+            if args.output:
+                output = args.output.resolve()
+                for protected in (config.STORAGE_ROOT.resolve(), config.NOVELS_ROOT.resolve()):
+                    if output == protected or protected in output.parents:
+                        raise ValueError("Reports must be written outside runtime storage")
+                with output.open("x", encoding="utf-8") as stream:
+                    stream.write(body)
+            else:
+                print(body)
+            return 0 if report["complete"] else 2
+        except (OSError, ValueError) as exc:
+            print(json.dumps({"success": False, "error": str(exc)}) if args.json else str(exc), file=sys.stderr)
+            return 1
     if args.command == "skill-path":
         try:
             path = str(bundled_skill_path())
