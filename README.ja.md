@@ -27,6 +27,12 @@ Novel Workspace MCP は、長編フィクションのための本格的な AI �
 
 ## 主な機能
 
+### v2.8 文体プリセット
+
+**ストーリーバイブル → 文体プリセット** で組み込み・カスタムの指示をプレビューし、文体編集欄への追加または置換ができます。自動保存は行いません。内容を確認し、**設定を保存** で確定してください。既存内容の置換には確認が必要です。操作表示は英語・中国語・日本語に対応し、プリセット本文は元の言語を維持します。
+
+MCP の `get_style_preset(name, source="custom", include_rendered=True)` でも同じ Markdown を取得できます。`source` は `auto`、`builtin`、`custom` に対応し、明示したソースから別のソースへのフォールバックは行いません。
+
 - アイデアから世界観、ルール、文体、全体構成、分巻、冒頭計画、登場人物まで段階的に作成。
 - 章生成パイプライン：要約 → 計画 → 下書き → 品質ゲート → 要約 → 継続性引き継ぎ。
 - 長編の整合性：事実、タイムライン、人物アーク、伏線、因果関係、正典ロック、移動ルール。
@@ -60,7 +66,7 @@ uv run novel-workspace mcp
 
 ローカル/API 設定は [`.env.example`](.env.example) を、ツール一覧と詳細仕様は [中国語 README](README.zh-CN.md) を参照してください。
 
-Docker は `docker compose up --build`、ワンクリック起動は `scripts/start.ps1` または `scripts/start.sh` を使用できます。Compose の公開先は既定で `127.0.0.1` です。CI は Python 3.10/3.12 で 366 件の自動テストを実行します。`publish.yml` は PyPI Trusted Publishing 用の配布物ビルドを備えています。
+Docker は `docker compose up --build`、ワンクリック起動は `scripts/start.ps1` または `scripts/start.sh` を使用できます。Compose の公開先は既定で `127.0.0.1` です。CI は Python 3.10/3.12 とフロントエンドの回帰テストを実行します。`publish.yml` は PyPI Trusted Publishing 用の配布物ビルドを備えています。
 
 ## プロジェクトの状態
 

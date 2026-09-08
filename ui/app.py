@@ -78,6 +78,7 @@ from core.task_store import TaskStore
 from core.task_runner import PersistentTaskRunner
 from core.savepoint_manager import SavepointManager
 from core.export_manager import ExportManager
+from core.style_preset import StylePresetManager
 from core.data_portability import ProjectZipRestorer, TextNovelImporter, TrashManager
 from core.change_review_manager import ChangeReviewManager
 from core.foreshadow_manager import ForeshadowManager
@@ -1598,6 +1599,27 @@ async def api_add_event(
 
 
 # ---- 设定 API ----
+
+@app.get("/api/novels/{name}/style-presets")
+async def api_list_style_presets(name: str):
+    try:
+        manager = StylePresetManager(get_novel_manager(name).path, logger, storage_mgr)
+        return {"success": True, "presets": manager.list_presets()}
+    except ValueError as exc:
+        return JSONResponse({"success": False, "error": str(exc)}, status_code=400)
+
+
+@app.get("/api/novels/{name}/style-presets/preview")
+async def api_preview_style_preset(name: str, preset: str, source: str = "auto", prefer_custom: bool = False):
+    try:
+        manager = StylePresetManager(get_novel_manager(name).path, logger, storage_mgr)
+        item = manager.get_preset(preset, prefer_custom=prefer_custom, source=source)
+        if item is None:
+            return JSONResponse({"success": False, "error": "Style preset not found"}, status_code=404)
+        return {"success": True, "preset": item, "style_text": manager.render_preset(item)}
+    except ValueError as exc:
+        return JSONResponse({"success": False, "error": str(exc)}, status_code=400)
+
 
 @app.get("/api/novels/{name}/bible")
 async def api_get_bible(name: str):

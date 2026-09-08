@@ -17,6 +17,18 @@
     zh: {},
     ja: {"墨境":"MoJing","创建小说":"小説を作成","导入小说 / 项目":"小説 / プロジェクトをインポート","回收站":"ゴミ箱","设置中心":"設定","作品":"作品","本地模型":"ローカルモデル","仪表盘":"ダッシュボード","创作台":"執筆スタジオ","故事设定":"ストーリーバイブル","人物管理":"登場人物","章节管理":"章管理","时间线":"タイムライン","开始第一部小说":"最初の小説を始める","从一个想法，到一部长篇小说":"ひとつのアイデアから長編小説へ","刷新":"更新","保存章节":"章を保存","保存设定":"設定を保存","导出":"エクスポート","检查一致性":"整合性を確認","取消":"キャンセル","下一步":"次へ","上一步":"戻る","英文":"English","中文":"中文","日本語":"日本語"}
   };
+  Object.assign(dict.en, {
+    "风格预设": "Style presets", "选择预设": "Select a preset", "预览": "Preview",
+    "追加到文风": "Append to style", "替换文风": "Replace style",
+    "选择预设并预览；应用仅修改编辑框，点击保存设定后才会保存。": "Preview a preset, then append or replace the editor content. Save story bible to persist your changes.",
+    "文风已填入编辑框，请点击保存设定": "Style staged in the editor. Click Save story bible to persist it."
+  });
+  Object.assign(dict.ja, {
+    "风格预设": "文体プリセット", "选择预设": "プリセットを選択", "预览": "プレビュー",
+    "追加到文风": "文体に追加", "替换文风": "文体を置換",
+    "选择预设并预览；应用仅修改编辑框，点击保存设定后才会保存。": "プリセットを確認して編集欄に追加または置換します。「設定を保存」で確定します。",
+    "文风已填入编辑框，请点击保存设定": "文体を編集欄に反映しました。「設定を保存」で確定してください。"
+  });
   const titles = { en: "MoJing · AI Novel Studio", zh: "墨境 · AI 小说工作台", ja: "MoJing · AI 小説スタジオ" };
   const current = () => localStorage.getItem("novel-ui-language") || "en";
   function text(node, target) {

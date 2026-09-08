@@ -41,4 +41,8 @@ jobs:
           novel-workspace backup --json
 
       - name: Validate frontend JavaScript
-        run: node --check ui/static/app.js && node --check ui/static/i18n.js
+        run: |
+          node --check ui/static/app.js
+          node --check ui/static/i18n.js
+          node --check ui/static/modules/style-presets.js
+          node --test tests/style-presets.test.cjs

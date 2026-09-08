@@ -37,6 +37,12 @@ Source checkouts keep runtime data under the repository for portable local devel
 
 ## Quick start
 
+### Style preset browser (v2.8)
+
+Open **Story bible → Style presets** to browse built-in and project-specific presets, preview the full instructions, and append them to or replace the style editor. These actions do not save automatically: review your edits, then click **Save story bible**. Replacing non-empty editor content asks for confirmation. The controls support English, Chinese, and Japanese; preset content keeps its original language.
+
+MCP clients can use `get_style_preset(name, source="custom", include_rendered=True)` to retrieve the same Markdown preview as the web studio. `source` accepts `auto`, `builtin`, or `custom`; explicit sources never silently fall back. With `auto`, `prefer_custom=True` prioritizes a custom preset. Create project-specific presets with the existing `save_style_preset` tool.
+
 ### Product preview
 
 ![Novel Workspace local writing studio](docs/assets/web-studio.png)
@@ -94,7 +100,7 @@ python -m pip install -e ".[dev]"
 pytest -q
 ```
 
-CI validates Python 3.10 and 3.12, the CLI doctor, frontend JavaScript syntax, and all 366 automated tests.
+CI validates Python 3.10 and 3.12, the CLI doctor, frontend JavaScript syntax, and the full Python and frontend regression suites.
 
 ## Project status
 

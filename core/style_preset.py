@@ -1,6 +1,7 @@
 """风格预设系统：提取、保存、复用写作风格。"""
 import json
 import re
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 
@@ -71,31 +72,61 @@ class StylePresetManager:
             })
         # 自定义风格
         for f in sorted(self.path.glob("*.json")):
-            try:
-                data = json.loads(f.read_text("utf-8"))
+            data = self._read_custom(f.stem)
+            if data:
                 results.append({
-                    "name": data.get("name", f.stem),
+                    "name": f.stem,
                     "builtin": False,
-                    "description": data.get("description", ""),
+                    "description": data["description"],
                 })
-            except Exception:
-                pass
         return results
 
-    def get_preset(self, name: str, prefer_custom: bool = False) -> Optional[dict]:
+    def _read_custom(self, name: str) -> Optional[dict]:
+        """Skip malformed entries; the filename, not stored metadata, is the identity."""
+        try:
+            self._validate_name(name)
+            path = self.path / f"{name}.json"
+            if path.is_symlink():
+                return None
+            data = json.loads(path.read_text("utf-8"))
+            if not isinstance(data, dict) or not isinstance(data.get("description", ""), str):
+                return None
+            for field in ("traits", "avoid"):
+                if not isinstance(data.get(field, []), list) or not all(
+                    isinstance(item, str) for item in data.get(field, [])
+                ):
+                    return None
+            return {
+                **data, "name": name, "builtin": False,
+                "description": data.get("description", ""),
+                "traits": data.get("traits", []), "avoid": data.get("avoid", []),
+            }
+        except (OSError, ValueError, UnicodeError):
+            return None
+
+    def get_preset(self, name: str, prefer_custom: bool = False, source: str = "auto") -> Optional[dict]:
         """获取风格预设；可选择自定义或内置同名项的优先级。"""
         self._validate_name(name)
-        preset_file = self.path / f"{name}.json"
-        custom = None
-        if preset_file.exists():
-            try:
-                data = json.loads(preset_file.read_text("utf-8"))
-                data["builtin"] = False
-                custom = data
-            except Exception:
-                pass
-        builtin = {**BUILTIN_STYLES[name], "name": name, "builtin": True} if name in BUILTIN_STYLES else None
+        if source not in ("auto", "builtin", "custom"):
+            raise ValueError("Source must be auto, builtin, or custom")
+        custom = self._read_custom(name) if source != "builtin" else None
+        builtin = {**deepcopy(BUILTIN_STYLES[name]), "name": name, "builtin": True} if name in BUILTIN_STYLES else None
+        if source == "builtin":
+            return builtin
+        if source == "custom":
+            return custom
         return (custom or builtin) if prefer_custom else (builtin or custom)
+
+    @staticmethod
+    def render_preset(preset: dict) -> str:
+        """Render reusable instructions without changing the story bible."""
+        sections = [f"# {preset['name']}"]
+        if preset.get("description"):
+            sections.append(preset["description"])
+        for field, heading in (("traits", "Writing traits"), ("avoid", "Avoid")):
+            if preset.get(field):
+                sections.append(f"## {heading}\n" + "\n".join(f"- {item}" for item in preset[field]))
+        return "\n\n".join(sections) + "\n"
 
     def save_preset(self, name: str, description: str, traits: list[str],
                     avoid: list[str] = None) -> dict:

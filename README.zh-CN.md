@@ -23,6 +23,12 @@
 
 ## Web 工作台主要能力
 
+### v2.8 风格预设浏览器
+
+在 **故事设定 → 风格预设** 中选择内置或自定义预设，预览完整指令，再追加到文风或替换当前编辑内容。操作只修改编辑框，确认后点击 **保存设定** 才会持久化；替换已有内容前会再次确认。入口支持中英日文，预设正文保留原始语言。
+
+MCP 使用 `get_style_preset(name, source="custom", include_rendered=True)` 获取相同的 Markdown 预览。`source` 支持 `auto`、`builtin`、`custom`，指定来源后不会回退到另一来源；`auto` 下可用 `prefer_custom=True` 优先选择自定义项。
+
 - 一句话创建小说，AI 分阶段生成世界观、规则、文风、总纲、首章目标和人物。
 - 章节规划 → 正文生成 → 质量修订 → 摘要 → 人物建议 → 事实/伏笔 → 一致性检查流水线。
 - 保存章节时在同一次摘要调用内提取连续性交接与计划对账；下一章优先读取经过正文指纹和逐字证据校验的结尾现场、未闭环与新增约束。
@@ -259,7 +265,7 @@ Copy-Item -Recurse -Force .\skills\novel-workspace "$env:CODEX_HOME\skills\novel
 uv run pytest -q
 ```
 
-当前 CI 在 Python 3.10 与 3.12 上运行全部 366 项自动化测试，并校验 CLI 与前端 JavaScript 语法。
+当前 CI 在 Python 3.10 与 3.12 上运行完整 Python 与前端回归测试，并校验 CLI 与前端 JavaScript 语法。
 
 数据默认保存在 `storage/`：任务数据库为 `storage/tasks.db`，每日备份位于 `storage/backups/`，删除的小说位于 `storage/.trash/`。
 

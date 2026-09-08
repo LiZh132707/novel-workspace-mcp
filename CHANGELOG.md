@@ -9,6 +9,27 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.8.0] - 2026-09-08
+
+### Added
+
+- Web Studio style preset browser with full previews, explicit built-in/custom selection, and append/replace actions that stage changes without saving automatically.
+- English, Chinese, and Japanese controls for the preset workflow, including confirmation before replacing existing style instructions.
+- Read-only preset listing and preview APIs, plus MCP `source`, `prefer_custom`, and `include_rendered` options using the same Markdown renderer.
+- A tested release-note extractor that publishes only the requested version, excluding planned work and historical announcements.
+
+### Fixed
+
+- Skip malformed custom preset records and use filenames as stable identities instead of trusting stored names.
+- Isolate returned built-in preset lists from mutation and prevent explicit source selection from silently falling back.
+- Ignore stale preview responses after selection or project changes.
+- Synchronize the package lockfile version and replace stale README test counts with suite-based descriptions.
+
+### Tests
+
+- Added Python coverage for preset sources, malformed data, project lookup, Web/MCP preview parity, and version-specific release notes.
+- Added frontend regression tests for append/replace behavior and enabled them in CI.
+
 ## [2.7.0] - 2026-09-07
 
 ### Added
@@ -124,7 +145,8 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Chapter planning, continuity checks, timeline, facts, foreshadowing, savepoints, recovery, and export workflows.
 - Data-free public repository baseline with local runtime data excluded from Git.
 
-[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.8.0...HEAD
+[2.8.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.7.0...v2.8.0
 [2.5.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...v2.5.0
 [2.6.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.5.0...v2.6.0
 [2.7.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.6.0...v2.7.0

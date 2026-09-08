@@ -1,0 +1,4 @@
+include CHANGELOG.md
+include scripts/release_notes.py
+include docs/RELEASING.md
+include tests/*.cjs

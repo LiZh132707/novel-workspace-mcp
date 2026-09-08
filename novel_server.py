@@ -175,7 +175,7 @@ async def list_tools():
         types.Tool(name="scan_character_evolution", description="scan_character_evolution: 扫描人物演变", inputSchema={"type":"object","properties":{"chapter_number": {"type": "integer"}},"required":["chapter_number"]}),
         types.Tool(name="get_character_evolution", description="get_character_evolution: 人物演变报告", inputSchema={"type":"object","properties":{"name": {"type": "string"}, },"required":["name"]}),
         types.Tool(name="list_style_presets", description="list_style_presets: 列出风格预设", inputSchema={"type":"object","properties":{},"required":[]}),
-        types.Tool(name="get_style_preset", description="get_style_preset: 获取风格预设", inputSchema={"type":"object","properties":{"name": {"type": "string"}, },"required":["name"]}),
+        types.Tool(name="get_style_preset", description="Get a style preset, optionally with reusable Markdown instructions. Explicit source never falls back to another source.", inputSchema={"type":"object","properties":{"name": {"type": "string"}, "prefer_custom": {"type": "boolean", "default": False}, "source": {"type": "string", "enum": ["auto", "builtin", "custom"], "default": "auto"}, "include_rendered": {"type": "boolean", "default": False}},"required":["name"]}),
         types.Tool(name="save_style_preset", description="save_style_preset: 保存风格预设", inputSchema={"type":"object","properties":{"name": {"type": "string"}, "description": {"type": "string"}, "traits": {"type": "array", "items": {"type": "string"}}, "avoid": {"type": "array", "items": {"type": "string"}}},"required":["name", "description", "traits"]}),
         types.Tool(name="extract_style_from_text", description="extract_style_from_text: 从文本提取风格", inputSchema={"type":"object","properties":{"name": {"type": "string"}, "text": {"type": "string"}},"required":["name", "text"]}),
         types.Tool(name="list_facts", description="list_facts: 查看最近事实与硬冲突", inputSchema={"type":"object","properties":{"limit":{"type":"integer"}},"required":[]}),
@@ -458,10 +458,13 @@ async def get_character_evolution(name):
 
 async def list_style_presets():
     presets = stm_().list_presets()
-    return "\n".join(f"{p['name']}: {p['description'][:50]}" for p in presets)
+    return "\n".join(f"{p['name']} [{'builtin' if p['builtin'] else 'custom'}]: {p['description'][:50]}" for p in presets)
 
-async def get_style_preset(name):
-    d = stm_().get_preset(name)
+async def get_style_preset(name, prefer_custom=False, source="auto", include_rendered=False):
+    manager = stm_()
+    d = manager.get_preset(name, prefer_custom=prefer_custom, source=source)
+    if d and include_rendered:
+        d["style_text"] = manager.render_preset(d)
     return json.dumps(d, ensure_ascii=False, indent=2) if d else f"Not found: {name}"
 
 async def save_style_preset(name, description, traits, avoid=None):
