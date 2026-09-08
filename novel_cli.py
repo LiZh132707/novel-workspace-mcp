@@ -151,12 +151,33 @@ def create_backups(*, novel_name: str | None = None, output_dir: Path | None = N
     return {"status": "pass", "count": len(files), "files": files}
 
 
+def inspect_backups(*, novel_name=None, output_dir=None, filename=None) -> dict:
+    import config
+    from core.backup_manager import BackupScheduler
+
+    scheduler = BackupScheduler(config.NOVELS_ROOT, config.STORAGE_ROOT,
+                                logging.getLogger("novel-workspace.backup"), output_dir=output_dir)
+    if filename is not None:
+        return scheduler.verify(filename, novel_name)
+    items = scheduler.list_backups(novel_name)
+    return {"status": "pass", "count": len(items), "backups": items}
+
+
 def _print_backups(report: dict, as_json: bool) -> None:
     if as_json:
         print(json.dumps(report, indent=2, ensure_ascii=False))
         return
     if report["status"] != "pass":
-        print(report["error"], file=sys.stderr)
+        print(report.get("error") or "; ".join(report.get("errors", [])), file=sys.stderr)
+        return
+    if "backups" in report:
+        for item in report["backups"]:
+            print(f"{item['name']}  {item['size_bytes']} bytes  {item['created_at']}")
+        print(f"Found {report['count']} backup archive(s).")
+        return
+    if "sha256" in report:
+        print(f"Verified {report['name']} ({report['file_count']} files)")
+        print(f"SHA256: {report['sha256']}")
         return
     print(f"Created {report['count']} backup archive(s).")
     for path in report["files"]:
@@ -193,8 +214,11 @@ def build_parser() -> argparse.ArgumentParser:
     show_config.add_argument("--json", action="store_true", help="emit JSON for scripts and support reports")
     backup = commands.add_parser("backup", help="create portable backup archives for novel projects")
     backup.add_argument("--novel", help="back up one exact project name instead of every project")
-    backup.add_argument("--output-dir", type=Path, help="write archives to this directory")
+    backup.add_argument("--output-dir", type=Path, help="use this directory for archive creation or inspection")
     backup.add_argument("--json", action="store_true", help="emit JSON for scripts")
+    inspection = backup.add_mutually_exclusive_group()
+    inspection.add_argument("--list", action="store_true", help="list existing backups without creating one")
+    inspection.add_argument("--verify", metavar="FILENAME", help="verify a backup in the configured directory without extracting it")
     skill_path = commands.add_parser("skill-path", help="print the bundled Codex Skill directory")
     skill_path.add_argument("--json", action="store_true", help="emit JSON for scripts")
     return parser
@@ -221,7 +245,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "backup":
         try:
-            report = create_backups(novel_name=args.novel, output_dir=args.output_dir)
+            if args.list or args.verify is not None:
+                report = inspect_backups(novel_name=args.novel, output_dir=args.output_dir, filename=args.verify)
+            else:
+                report = create_backups(novel_name=args.novel, output_dir=args.output_dir)
         except (OSError, ValueError) as exc:
             report = {"status": "fail", "error": str(exc), "files": []}
         _print_backups(report, args.json)

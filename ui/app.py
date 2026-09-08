@@ -3968,6 +3968,43 @@ async def api_model_profile(request: Request):
         return JSONResponse({"success": False, "error": str(exc)}, status_code=400)
 
 
+@app.get("/api/novels/{name}/backups")
+async def api_list_backups(name: str):
+    get_novel_manager(name)
+    items = await asyncio.to_thread(backup_scheduler.list_backups, name)
+    return {"success": True, "backups": items}
+
+
+@app.post("/api/novels/{name}/backups")
+async def api_create_backup(name: str):
+    novel = get_novel_manager(name)
+    try:
+        path = await asyncio.to_thread(backup_scheduler.create, novel.path)
+        return {"success": True, "name": path.name}
+    except (OSError, ValueError) as exc:
+        return JSONResponse({"success": False, "error": str(exc)}, status_code=400)
+
+
+@app.post("/api/novels/{name}/backups/{filename}/verify")
+async def api_verify_backup(name: str, filename: str):
+    get_novel_manager(name)
+    try:
+        report = await asyncio.to_thread(backup_scheduler.verify, filename, name)
+        return {"success": True, "verification": report}
+    except (OSError, ValueError) as exc:
+        return JSONResponse({"success": False, "error": str(exc)}, status_code=400)
+
+
+@app.get("/api/novels/{name}/backups/{filename}/download")
+async def api_download_backup(name: str, filename: str):
+    get_novel_manager(name)
+    try:
+        path = backup_scheduler.resolve_backup(filename, name)
+        return FileResponse(path, filename=path.name, media_type="application/zip")
+    except (OSError, ValueError) as exc:
+        return JSONResponse({"success": False, "error": str(exc)}, status_code=404)
+
+
 @app.get("/api/settings")
 async def api_settings():
     return JSONResponse({"success": True, "settings": settings_manager.get(), "model": config.get_model_config_report(), "backup": backup_scheduler.status()})

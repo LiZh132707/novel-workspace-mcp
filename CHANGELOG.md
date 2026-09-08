@@ -9,6 +9,26 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.10.0] - 2026-09-08
+
+### Added
+
+- A project backup browser in Web Studio with manual creation, inventory metadata, read-only integrity verification, and project-scoped ZIP downloads.
+- `novel-workspace backup --list` and `backup --verify FILENAME`, including JSON output and nonzero exit status for failed verification.
+- Verification reports with SHA-256, file counts, expanded sizes, CRC checks, portable-path checks, and bounded JSON project-state validation. Verification never extracts or restores files.
+- English, Chinese, and Japanese backup controls and usage documentation.
+
+### Fixed
+
+- Reject zero, negative, or non-integer retention values before a newly created backup can be removed.
+- Select the latest backup chronologically across project names rather than by filename ordering.
+- Reject malformed project states during backup creation before replacing or pruning older good archives.
+- Exclude unmanaged filenames and symbolic-link archives from backup inventory and downloads.
+
+### Tests
+
+- Added regression coverage for retention, ordering, corrupt archives, path validation, CLI inspection, project-scoped APIs, downloads, and escaped frontend rendering.
+
 ## [2.9.0] - 2026-09-08
 
 ### Added
@@ -165,7 +185,8 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Chapter planning, continuity checks, timeline, facts, foreshadowing, savepoints, recovery, and export workflows.
 - Data-free public repository baseline with local runtime data excluded from Git.
 
-[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.9.0...HEAD
+[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.10.0...HEAD
+[2.10.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.9.0...v2.10.0
 [2.9.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.8.0...v2.9.0
 [2.8.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.7.0...v2.8.0
 [2.5.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.4.0...v2.5.0

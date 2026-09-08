@@ -29,6 +29,12 @@ Source checkouts keep runtime data under the repository for portable local devel
 
 ## What it does
 
+### Inspectable project backups (v2.10)
+
+Click **Project backups** beside the global search button to create a backup, browse existing ZIPs, verify integrity, or download a copy. New controls support English, Chinese, and Japanese. Verification is read-only and never overwrites a novel. Use **Import novel / project** to restore a downloaded archive as a separate project.
+
+For scripts, use `novel-workspace backup --list --novel NAME --json` or `novel-workspace backup --verify FILENAME --json`. Both accept `--output-dir` to inspect a custom backup directory; filenames must belong to that directory, not arbitrary filesystem paths. Verification checks CRC, paths, and a JSON-object `state.json`, and reports SHA-256. Limits are 10,000 entries, 1 GB expanded, and 2 MB for project state. A passing result is not proof of authorship, narrative completeness, or a full restore rehearsal. Inventory alone does not imply successful verification.
+
 ### NPC and character relationships
 
 Open **Characters → Character relationships** to inspect directed connections, strength scores (-100 to 100), and expandable chapter evidence. Filter by a focal character, role (including NPC), or an inclusive chapter cutoff. NPC filters also show connected characters; a chapter cutoff respects the configured appearance range of registered characters.
