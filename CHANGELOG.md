@@ -9,6 +9,22 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.12.1] - 2026-09-10
+
+### Fixed
+
+- Foreshadow rebuilds now stage replay in memory and atomically publish under the author-edit lock, preserving acknowledged edits instead of restoring an outdated snapshot.
+- Persisted revision high-water marks prevent stale automatic-record edits after rebuilds or removal and reintroduction of the same deterministic ID.
+- Author-managed foreshadows retain name aliases and suppress automatic duplicates after renaming, including resolved and cancelled plans.
+- Clearing the optional resolution chapter now persists across Web and MCP updates; omission still preserves the current value.
+- The Web tag editor uses lossless JSON arrays so commas, quotes, and embedded newlines survive unrelated edits. Invalid input is reported without saving.
+- Chapter preview and ingestion share ordered lifecycle transitions, correctly handling introduction and resolution in the same batch.
+- Failed project creation restores the in-memory registry and current project as well as cleaning up the incomplete directory, allowing a clean retry.
+
+### Tests
+
+- Added regression coverage for replay/edit concurrency, stale revisions and identity reuse, author aliases, explicit field clearing, Web/MCP parity, preview ordering, lossless tag editing, and project-creation rollback.
+
 ## [2.12.0] - 2026-09-10
 
 ### Added
@@ -226,7 +242,8 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Chapter planning, continuity checks, timeline, facts, foreshadowing, savepoints, recovery, and export workflows.
 - Data-free public repository baseline with local runtime data excluded from Git.
 
-[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.12.0...HEAD
+[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.12.1...HEAD
+[2.12.1]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.12.0...v2.12.1
 [2.12.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.11.0...v2.12.0
 [2.11.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.10.0...v2.11.0
 [2.10.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.9.0...v2.10.0

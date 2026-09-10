@@ -80,35 +80,21 @@ class ChapterChangePreview:
         return result
 
     def _foreshadow_changes(self, chapter: int, summary: dict) -> list[dict]:
-        open_items = [item for item in self.foreshadows.list(chapter) if item.get("status") == "open"]
         result = []
-        for raw in summary.get("foreshadowing", []):
-            item = raw if isinstance(raw, dict) else {"action": "introduce", "text": str(raw)}
-            if item.get("evidence_verified") is False:
-                continue
-            text = str(item.get("text", "")).strip()
-            if not text and not item.get('id'):
-                continue
-            action = str(item.get("action") or "introduce")
-            match = self.foreshadows.match_resolution(open_items, item, chapter)
-            if match and match.get('author_managed') and action == 'resolve':
-                match = None
-            if action == "resolve":
-                result.append({
-                    "category": "foreshadow", "kind_label": "伏笔", "name": text,
-                    "field": "status", "before": match.get("text", "未找到对应开放伏笔") if match else "未找到对应开放伏笔",
-                    "after": "resolved", "action": "change", "risk": "low" if match else "high",
-                    "matched_id": match.get("id", "") if match else "",
-                })
-            elif action == 'introduce' and not match and not any(
-                value.get('author_managed') and value.get('origin_text', value.get('text')) == text
-                for value in self.foreshadows.list(chapter)
-            ):
-                result.append({
-                    "category": "foreshadow", "kind_label": "伏笔", "name": text,
-                    "field": "status", "before": "", "after": "open", "action": "create", "risk": "low",
-                    "target_chapter": self._target_chapter(item.get("target_chapter"), chapter),
-                })
+        for change in self.foreshadows.preview(chapter, summary.get('foreshadowing', [])):
+            resolving = change['action'] == 'resolve'
+            item = {
+                'category': 'foreshadow', 'kind_label': '伏笔', 'name': change['text'],
+                'field': 'status', 'before': (change['before'] or '未找到对应开放伏笔') if resolving else '',
+                'after': 'resolved' if resolving else 'open',
+                'action': 'change' if resolving else 'create',
+                'risk': 'high' if resolving and not change['matched'] else 'low',
+            }
+            if resolving:
+                item['matched_id'] = change['matched_id']
+            else:
+                item['target_chapter'] = change['target_chapter']
+            result.append(item)
         return result
 
     def _knowledge_changes(self, summary: dict) -> list[dict]:

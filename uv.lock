@@ -1701,7 +1701,7 @@ wheels = [
 
 [[package]]
 name = "novel-workspace-mcp"
-version = "2.12.0"
+version = "2.12.1"
 source = { editable = "." }
 dependencies = [
     { name = "chromadb" },

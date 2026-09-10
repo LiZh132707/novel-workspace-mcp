@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import uuid
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from filelock import FileLock
@@ -24,7 +25,53 @@ class ForeshadowManager:
 
     def _ingest(self, chapter: int, entries: list) -> dict:
         data = self._load()
+        result, _ = self._apply_entries(data, chapter, entries)
+        self._save(data)
+        return result
+
+    @staticmethod
+    def _author_managed(item):
+        return bool(item.get('author_managed') or item.get('source') == 'manual')
+
+    def _remember_revisions(self, data):
+        data['revision_high_water'] = max(
+            [self._chapter_number(data.get('revision_high_water'))]
+            + [self._chapter_number(item.get('revision')) for item in data['items']])
+
+    def _save(self, data):
+        self._remember_revisions(data)
+        self.storage.atomic_write_json(self.path, data)
+
+    def preview(self, chapter, entries):
+        """Run the same ordered transitions as ingestion without publishing writes."""
+        self._integer('chapter', chapter, 1, 1000000)
+        if not isinstance(entries, list):
+            raise ValueError('entries must be a list')
+        _, changes = self._apply_entries(deepcopy(self._load()), chapter, entries)
+        return changes
+
+    def rebuild(self, chapters):
+        """Replay in memory and atomically publish under the author-edit lock.
+
+        Read author records only after taking the lock. Persist a high-water mark
+        even for deleted records so deterministic IDs never reuse old revisions.
+        """
+        with FileLock(str(self.path) + '.transaction.lock', timeout=30):
+            data = self._load()
+            self._remember_revisions(data)
+            data['items'] = [item for item in data['items'] if self._author_managed(item)]
+            for chapter, entries in chapters:
+                self._integer('chapter', chapter, 1, 1000000)
+                if not isinstance(entries, list):
+                    raise ValueError('entries must be a list')
+                self._apply_entries(data, chapter, entries)
+            self._save(data)
+
+    def _apply_entries(self, data, chapter, entries):
+        """Apply lifecycle actions sequentially to an isolated in-memory ledger."""
         introduced = resolved = unmatched = 0
+        changes = []
+        self._remember_revisions(data)
         for raw in entries:
             item = raw if isinstance(raw, dict) else {"action": "introduce", "text": str(raw)}
             if item.get("evidence_verified") is False:
@@ -35,7 +82,12 @@ class ForeshadowManager:
             action = item.get("action", "introduce")
             if action == "resolve":
                 match = self.match_resolution(data['items'], item, chapter)
-                if match and not match.get('author_managed'):
+                if match and self._author_managed(match):
+                    match = None
+                changes.append(dict(action='resolve', text=text, matched=match is not None,
+                                    matched_id=match.get('id', '') if match else '',
+                                    before=match.get('text', '') if match else ''))
+                if match:
                     before = dict(match)
                     match.update({"status": "resolved", "resolved_chapter": chapter, "resolved_at": datetime.now().isoformat(),
                                   'resolution_note': str(item.get('evidence', ''))[:2000]})
@@ -46,7 +98,7 @@ class ForeshadowManager:
                 continue
             if action != 'introduce' or not text:
                 continue
-            if any(value.get('author_managed') and value.get('origin_text', value.get('text')) == text for value in data['items']):
+            if any(self._author_managed(value) and text in self._aliases(value) for value in data['items']):
                 continue
             if any(value.get("status") == "open" and value.get("text") == text for value in data["items"]):
                 continue
@@ -57,15 +109,25 @@ class ForeshadowManager:
                 target = int(item.get("target_chapter") or chapter + 10)
             except (TypeError, ValueError, OverflowError):
                 target = chapter + 10
-            data["items"].append({
+            self._remember_revisions(data)
+            data['revision_high_water'] += 1
+            record = {
                 "id": stable_id, "text": text, "introduced_chapter": chapter,
                 "target_chapter": min(1000001, max(chapter + 1, target)), "status": "open",
                 "evidence": str(item.get("evidence", ""))[:500],
-                "created_at": datetime.now().isoformat(), 'revision': 0, 'source': 'chapter_summary',
-            })
+                "created_at": datetime.now().isoformat(), 'revision': data['revision_high_water'], 'source': 'chapter_summary',
+            }
+            data['items'].append(record)
+            changes.append(dict(action='introduce', text=text, target_chapter=record['target_chapter']))
             introduced += 1
-        self.storage.atomic_write_json(self.path, data)
-        return {"introduced": introduced, "resolved": resolved, 'unmatched_resolutions': unmatched}
+        self._remember_revisions(data)
+        return {"introduced": introduced, "resolved": resolved, 'unmatched_resolutions': unmatched}, changes
+
+    @staticmethod
+    def _aliases(item):
+        aliases = item.get('text_aliases', [])
+        aliases = aliases if isinstance(aliases, list) else []
+        return {value for value in [item.get('text'), item.get('origin_text'), *aliases] if isinstance(value, str)}
 
     @classmethod
     def match_resolution(cls, items, entry, chapter):
@@ -99,6 +161,8 @@ class ForeshadowManager:
                 result[key] = self._text(key, result[key], maximum, key != 'text')
         for key in ('target_chapter', 'resolved_chapter'):
             if key in result:
+                if key == 'resolved_chapter' and result[key] is None:
+                    continue
                 self._integer(key, result[key], 1)
         if 'status' in result and result['status'] not in ('open', 'resolved', 'cancelled'):
             raise ValueError('status must be open, resolved or cancelled')
@@ -140,7 +204,7 @@ class ForeshadowManager:
                         created_at=datetime.now().isoformat())
             self._record(item, {}, 'create')
             data['items'].append(item)
-            self.storage.atomic_write_json(self.path, data)
+            self._save(data)
             return item
 
     def list(self, current_chapter: int | None = None) -> list[dict]:
@@ -186,12 +250,14 @@ class ForeshadowManager:
         status = values.get('status', item.get('status'))
         if any(k in values for k in ('resolved_chapter', 'resolution_note')) and status != 'resolved':
             raise ValueError('Resolution metadata requires resolved status')
-        if 'resolved_chapter' in values and values['resolved_chapter'] < introduced:
+        if values.get('resolved_chapter') is not None and values['resolved_chapter'] < introduced:
             raise ValueError('resolved_chapter must not precede introduction')
         if status == 'open' and any(other is not item and other.get('status') == 'open' and
                                   other.get('text') == values.get('text', item.get('text')) for other in data['items']):
             raise ValueError('Another open foreshadow has this exact text')
         item.update(values)
+        if item.get('resolved_chapter') is None:
+            item.pop('resolved_chapter', None)
         if status != 'resolved':
             for key in ('resolved_chapter', 'resolved_at', 'resolution_note'):
                 item.pop(key, None)
@@ -199,8 +265,9 @@ class ForeshadowManager:
             item['resolved_at'] = datetime.now().isoformat()
         item['author_managed'] = True
         item.setdefault('origin_text', before.get('text', ''))
+        item['text_aliases'] = sorted(self._aliases(before) | self._aliases(item))
         self._record(item, before, 'author_update')
-        self.storage.atomic_write_json(self.path, data)
+        self._save(data)
         return item
 
     def delete(self, item_id: str) -> bool:
@@ -209,9 +276,10 @@ class ForeshadowManager:
 
     def _delete(self, item_id: str) -> bool:
         data = self._load()
+        self._remember_revisions(data)
         before = len(data["items"])
         data["items"] = [item for item in data["items"] if item.get("id") != item_id]
-        self.storage.atomic_write_json(self.path, data)
+        self._save(data)
         return len(data["items"]) < before
 
     def _load(self) -> dict:

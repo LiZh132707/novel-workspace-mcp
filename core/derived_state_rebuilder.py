@@ -41,13 +41,10 @@ class DerivedStateRebuilder:
         prior_accepted_reviews = self._accepted_character_reviews()
         prior_review_decisions = self._character_review_decisions()
         travel_rules = StoryClockManager(self.root, self.logger, self.storage).get()["travel_rules"]
-        # Author-managed plans are not derived from summaries. Seed them before
-        # replay so automation neither duplicates nor silently resolves them.
-        author_foreshadows = [item for item in ForeshadowManager(self.root, self.logger, self.storage)._load()['items']
-                             if item.get('author_managed') or item.get('source') == 'manual']
+        # Foreshadows are staged separately and committed under their edit lock.
         for relative, default in self.DEFAULTS.items():
-            self.storage.atomic_write_json(self.root / relative,
-                {'items': author_foreshadows} if relative == 'foreshadowing.json' else default)
+            if relative != 'foreshadowing.json':
+                self.storage.atomic_write_json(self.root / relative, default)
         self.storage.atomic_write_json(
             self.root / "tracking" / "story_clock.json", {"travel_rules": travel_rules, "events": []},
         )
@@ -59,6 +56,7 @@ class DerivedStateRebuilder:
         self._apply_manual_events(cards, manual_by_chapter.pop(0, []))
         facts = FactManager(self.root, self.logger, self.storage)
         foreshadows = ForeshadowManager(self.root, self.logger, self.storage)
+        foreshadow_chapters = []
         logic = StoryLogicManager(self.root, self.logger, self.storage)
         entities = EntityLedger(self.root, self.logger, self.storage)
         reviews = ChangeReviewManager(self.root, self.logger, self.storage)
@@ -78,7 +76,7 @@ class DerivedStateRebuilder:
             if chapter < 1:
                 chapter = int(path.stem)
             facts.add_from_summary(chapter, summary.get("facts", []))
-            foreshadows.ingest(chapter, summary.get("foreshadowing", []))
+            foreshadow_chapters.append((chapter, summary.get("foreshadowing", [])))
             logic.ingest(chapter, summary)
             entities.ingest(chapter, summary)
             proposal_result = canonical.propose_from_summary(chapter, summary)
@@ -103,6 +101,7 @@ class DerivedStateRebuilder:
         review_decisions_replayed = self._restore_character_review_decisions(prior_review_decisions)
         character_profiles_reconciled = self._reconcile_character_profiles(prior_accepted_reviews)
         canonical.create_version(current_chapter, reason)
+        foreshadows.rebuild(foreshadow_chapters)
         return {
             "replayed_chapters": replayed,
             "manual_state_events": len(manual_history),

@@ -57,3 +57,25 @@ def test_capture_current_returns_matching_manager_and_info(monkeypatch, tmp_path
     manager, info = workspace.capture_current()
     assert manager.name == info["name"] == "绑定书"
     assert manager.path == workspace_module.NOVELS_ROOT / "绑定书"
+
+
+def test_save_failure_restores_memory_disk_and_allows_retry(monkeypatch, tmp_path):
+    import pytest
+    from copy import deepcopy
+    workspace = _manager(tmp_path, monkeypatch)
+    workspace.create_novel('Existing')
+    previous = deepcopy(workspace.data)
+    original_save = workspace._save
+    def fail():
+        raise OSError('injected registry write failure')
+    monkeypatch.setattr(workspace, '_save', fail)
+    with pytest.raises(OSError, match='injected'):
+        workspace.create_novel('Ghost')
+    assert workspace.data == previous
+    assert workspace._current_novel == 'Existing'
+    assert WorkspaceManager(LOGGER).data == previous
+    assert not (tmp_path / 'novels' / 'Ghost').exists()
+    monkeypatch.setattr(workspace, '_save', original_save)
+    workspace.create_novel('Ghost')
+    assert workspace.data['current'] == 'Ghost'
+    assert set(workspace.data['novels']) == {'Existing', 'Ghost'}

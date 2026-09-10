@@ -1,5 +1,6 @@
 """工作空间管理器：多小说项目管理，带备份与锁。"""
 import shutil
+from copy import deepcopy
 from datetime import datetime
 from typing import Optional
 
@@ -72,9 +73,11 @@ class WorkspaceManager:
             novel_path = NOVELS_ROOT / name
             if novel_path.exists():
                 raise ValueError(f"小说目录 '{name}' 已存在但未登记，请先手动确认或导入，系统不会自动覆盖")
-            for d in NOVEL_DIRS:
-                (novel_path / d).mkdir(parents=True, exist_ok=True)
+            previous_data = deepcopy(self.data)
+            previous_current = self._current_novel
             try:
+                for d in NOVEL_DIRS:
+                    (novel_path / d).mkdir(parents=True, exist_ok=True)
                 for fname, content in BIBLE_FILES.items():
                     self.storage.atomic_write_text(novel_path / "bible" / fname, content)
                 for fname, content in OUTLINE_FILES.items():
@@ -99,6 +102,8 @@ class WorkspaceManager:
                 self._current_novel = name
                 self._save()
             except Exception:
+                self.data = previous_data
+                self._current_novel = previous_current
                 shutil.rmtree(novel_path, ignore_errors=True)
                 raise
         self.logger.info("创建小说: %s", name)

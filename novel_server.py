@@ -156,7 +156,7 @@ async def list_tools():
             'text': {'type': 'string'}, 'target_chapter': {'type': 'integer', 'minimum': 1},
             'status': {'type': 'string', 'enum': ['open', 'resolved', 'cancelled']},
             'priority': {'type': 'string', 'enum': ['low', 'normal', 'high']}, 'tags': {'type': 'array', 'items': {'type': 'string'}},
-            'notes': {'type': 'string'}, 'resolved_chapter': {'type': 'integer', 'minimum': 1}, 'resolution_note': {'type': 'string'}}, 'required': ['item_id']}),
+            'notes': {'type': 'string'}, 'resolved_chapter': {'type': ['integer', 'null'], 'minimum': 1, 'description': 'Actual resolution chapter; null clears it, omission preserves it.'}, 'resolution_note': {'type': 'string'}}, 'required': ['item_id']}),
         types.Tool(name="inspect_manuscript", description="Read-only chapter inventory, length trends, missing/empty chapters and exact cross-chapter repeated paragraphs. No model calls. Excerpts are opt-in; units are not stored word counts.", inputSchema={
             "type": "object", "properties": {
                 "start_chapter": {"type": "integer", "minimum": 1, "maximum": 1000000},
