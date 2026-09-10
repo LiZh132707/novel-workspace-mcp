@@ -29,6 +29,12 @@ Source checkouts keep runtime data under the repository for portable local devel
 
 ## What it does
 
+### Foreshadow planner (v2.12)
+
+Open **Timeline → Foreshadow planner** to plant, edit, reschedule, resolve, cancel, or reopen a foreshadow. Use due-window, status, priority, tag, and text filters; inspect payoff deadlines, evidence, and the last 50 changes. The planner supports English, Chinese, and Japanese and can copy the visible page as JSON.
+
+Manual creation or editing makes a record **author-managed**: derived-state rebuilds preserve it, and automatic summaries no longer resolve it. New automatic resolutions require one exact ID or text match, never a substring guess. MCP exposes `get_foreshadow_board`, `create_foreshadow`, and `update_foreshadow` with optional revision checks. See [lifecycle rules and examples](docs/FORESHADOW_PLANNER.md).
+
 ### Manuscript diagnostics workbench (v2.11)
 
 Open **Dashboard → Manuscript diagnostics** for chapter inventory, length trends, optional length targets, estimated reading time, missing/empty chapters, filename conflicts, and exact cross-chapter repeated paragraphs with chapter/line evidence. Filter an inclusive chapter range and download JSON or Markdown. The controls support English, Chinese, and Japanese; structured findings and exported reports are English.

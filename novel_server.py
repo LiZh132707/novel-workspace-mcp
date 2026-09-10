@@ -139,6 +139,24 @@ app = Server(SERVER_NAME)
 @app.list_tools()
 async def list_tools():
     return [
+        types.Tool(name='get_foreshadow_board', description='Filter and paginate foreshadows by due window, status, priority, tag and text. Summary counts cover the whole project. This is a planning view, not a historical snapshot.', inputSchema={
+            'type': 'object', 'properties': {'current_chapter': {'type': 'integer', 'minimum': 0},
+            'status': {'type': 'string', 'enum': ['all', 'open', 'resolved', 'cancelled']},
+            'due': {'type': 'string', 'enum': ['all', 'overdue', 'due_soon', 'scheduled', 'unplanned', 'closed']},
+            'query': {'type': 'string'}, 'tag': {'type': 'string'},
+            'priority': {'type': 'string', 'enum': ['all', 'low', 'normal', 'high']},
+            'due_within': {'type': 'integer', 'minimum': 0}, 'offset': {'type': 'integer', 'minimum': 0},
+            'limit': {'type': 'integer', 'minimum': 1, 'maximum': 100}}, 'required': []}),
+        types.Tool(name='create_foreshadow', description='Create an author-managed foreshadow plan. Chapter zero means not yet introduced. Author-managed plans survive derived-state rebuilds and are never automatically resolved.', inputSchema={
+            'type': 'object', 'properties': {'text': {'type': 'string'}, 'introduced_chapter': {'type': 'integer', 'minimum': 0},
+            'target_chapter': {'type': 'integer', 'minimum': 1}, 'priority': {'type': 'string', 'enum': ['low', 'normal', 'high']},
+            'tags': {'type': 'array', 'items': {'type': 'string'}}, 'notes': {'type': 'string'}}, 'required': ['text']}),
+        types.Tool(name='update_foreshadow', description='Edit, reschedule, resolve, cancel or reopen a foreshadow by ID. Use expected_revision from the board to reject stale edits. Editing transfers lifecycle control to the author; provide resolved_chapter when known.', inputSchema={
+            'type': 'object', 'properties': {'item_id': {'type': 'string'}, 'expected_revision': {'type': 'integer', 'minimum': 0},
+            'text': {'type': 'string'}, 'target_chapter': {'type': 'integer', 'minimum': 1},
+            'status': {'type': 'string', 'enum': ['open', 'resolved', 'cancelled']},
+            'priority': {'type': 'string', 'enum': ['low', 'normal', 'high']}, 'tags': {'type': 'array', 'items': {'type': 'string'}},
+            'notes': {'type': 'string'}, 'resolved_chapter': {'type': 'integer', 'minimum': 1}, 'resolution_note': {'type': 'string'}}, 'required': ['item_id']}),
         types.Tool(name="inspect_manuscript", description="Read-only chapter inventory, length trends, missing/empty chapters and exact cross-chapter repeated paragraphs. No model calls. Excerpts are opt-in; units are not stored word counts.", inputSchema={
             "type": "object", "properties": {
                 "start_chapter": {"type": "integer", "minimum": 1, "maximum": 1000000},
@@ -498,6 +516,17 @@ async def list_facts(limit=50):
 async def list_foreshadowing():
     return json.dumps(fsh_().list(nm().get_current_chapter()), ensure_ascii=False, indent=2)
 
+async def get_foreshadow_board(current_chapter=None, status='all', due='all', query='', tag='', priority='all', due_within=5, offset=0, limit=50):
+    current = nm().get_current_chapter() if current_chapter is None else current_chapter
+    return json.dumps(await asyncio.to_thread(fsh_().board, current_chapter=current, status=status, due=due,
+        query=query, tag=tag, priority=priority, due_within=due_within, offset=offset, limit=limit), ensure_ascii=False, indent=2)
+
+async def create_foreshadow(text, introduced_chapter=0, target_chapter=None, priority='normal', tags=None, notes=''):
+    return json.dumps(await asyncio.to_thread(fsh_().create, text, introduced_chapter, target_chapter, priority, tags, notes), ensure_ascii=False, indent=2)
+
+async def update_foreshadow(item_id, expected_revision=None, **values):
+    return json.dumps(await asyncio.to_thread(fsh_().update, item_id, expected_revision=expected_revision, **values), ensure_ascii=False, indent=2)
+
 async def get_story_logic():
     return json.dumps(StoryLogicManager(nm().path, logger).get(), ensure_ascii=False, indent=2)
 
@@ -795,6 +824,9 @@ HANDLERS = {
     'extract_style_from_text': extract_style_from_text,
     'list_facts': list_facts,
     'list_foreshadowing': list_foreshadowing,
+    'get_foreshadow_board': get_foreshadow_board,
+    'create_foreshadow': create_foreshadow,
+    'update_foreshadow': update_foreshadow,
     'get_story_logic': get_story_logic,
     'get_causal_graph': get_causal_graph,
     'propose_causal_repairs': propose_causal_repairs,

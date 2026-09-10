@@ -1,0 +1,24 @@
+#foreshadowPlannerDialog { width:min(1100px,95vw); }
+#foreshadowPlannerDialog .dialog-card { width:100%; max-width:none; }
+#foreshadowEditorDialog { width:min(800px,95vw); }
+#foreshadowEditorDialog .dialog-card { width:100%; max-width:none; }
+#foreshadowPlannerDialog .utility-dialog-body,#foreshadowEditorDialog .utility-dialog-body { overflow-wrap:anywhere; }
+#foreshadowPlannerDialog p,#foreshadowEditorDialog p { font-size:13px; line-height:1.6; }
+.foreshadow-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+.foreshadow-actions,.foreshadow-pagination { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0; }
+.foreshadow-pagination { justify-content:space-between; }
+.foreshadow-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+.foreshadow-metrics div { padding:14px; border:1px solid var(--line); border-radius:10px; }
+.foreshadow-metrics b { display:block; font-size:24px; }
+.foreshadow-metrics span { font-size:12px; color:var(--muted); }
+.foreshadow-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:14px; }
+.foreshadow-card { background:var(--white); color:var(--ink); border:1px solid var(--line); border-radius:12px; padding:18px; }
+.foreshadow-card h3 { font-size:17px; line-height:1.5; }
+.foreshadow-card pre { max-height:220px; overflow:auto; white-space:pre-wrap; font-size:12px; }
+.foreshadow-prose { white-space:pre-wrap; }
+.foreshadow-card details { margin-top:12px; }
+.foreshadow-badge,.foreshadow-tag { display:inline-block; padding:3px 8px; border-radius:6px; background:#f0ebe4; font-size:12px; }
+.foreshadow-badge.overdue { background:#fce6df; color:#893c29; }
+.foreshadow-badge.due_soon { background:#fff1cc; color:#775415; }
+.foreshadow-badge.closed { background:#e5f1e9; color:#315d42; }
+#foreshadowEditorError { color:#a94735; }

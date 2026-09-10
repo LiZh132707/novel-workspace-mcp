@@ -2404,13 +2404,41 @@ async def api_facts(name: str):
 
 @app.get("/api/novels/{name}/foreshadowing")
 async def api_foreshadowing(name: str):
+    nm = get_novel_manager(name)
     try:
-        nm = get_novel_manager(name)
         current = nm.get_current_chapter()
-        items = ForeshadowManager(nm.path, logger, storage_mgr).list(current)
+        items = await asyncio.to_thread(ForeshadowManager(nm.path, logger, storage_mgr).list, current)
         return JSONResponse({"success": True, "items": items})
     except Exception as exc:
         return JSONResponse({"success": False, "error": str(exc)}, status_code=400)
+
+
+@app.get('/api/novels/{name}/foreshadow-board')
+async def api_foreshadow_board(name: str, current_chapter: int | None = None, status: str = 'all',
+                               due: str = 'all', query: str = '', tag: str = '', priority: str = 'all',
+                               due_within: int = 5, offset: int = 0, limit: int = 50):
+    nm = get_novel_manager(name)
+    try:
+        board = await asyncio.to_thread(ForeshadowManager(nm.path, logger, storage_mgr).board,
+            current_chapter=nm.get_current_chapter() if current_chapter is None else current_chapter,
+            status=status, due=due, query=query, tag=tag, priority=priority,
+            due_within=due_within, offset=offset, limit=limit)
+        return JSONResponse({'success': True, 'board': board}, headers={'Cache-Control': 'no-store'})
+    except (ValueError, OSError) as exc:
+        return JSONResponse({'success': False, 'error': str(exc)}, status_code=400)
+
+
+@app.post('/api/novels/{name}/foreshadowing')
+async def api_create_foreshadow(name: str, request: Request):
+    nm = get_novel_manager(name)
+    try:
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise ValueError('Expected a JSON object')
+        item = await asyncio.to_thread(ForeshadowManager(nm.path, logger, storage_mgr).create, **payload)
+        return {'success': True, 'item': item}
+    except (ValueError, TypeError, OSError) as exc:
+        return JSONResponse({'success': False, 'error': str(exc)}, status_code=400)
 
 
 @app.get("/api/novels/{name}/story-logic")
@@ -2811,8 +2839,12 @@ async def api_character_voice(name: str, character_name: str, request: Request):
 
 @app.post("/api/novels/{name}/foreshadowing/{item_id}")
 async def api_update_foreshadow(name: str, item_id: str, request: Request):
+    nm = get_novel_manager(name)
     try:
-        item = ForeshadowManager(get_novel_manager(name).path, logger, storage_mgr).update(item_id, **(await request.json()))
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise ValueError('Expected a JSON object')
+        item = await asyncio.to_thread(ForeshadowManager(nm.path, logger, storage_mgr).update, item_id, **payload)
         return JSONResponse({"success": True, "item": item})
     except Exception as exc:
         return JSONResponse({"success": False, "error": str(exc)}, status_code=400)

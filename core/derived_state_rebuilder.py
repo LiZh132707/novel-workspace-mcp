@@ -41,8 +41,13 @@ class DerivedStateRebuilder:
         prior_accepted_reviews = self._accepted_character_reviews()
         prior_review_decisions = self._character_review_decisions()
         travel_rules = StoryClockManager(self.root, self.logger, self.storage).get()["travel_rules"]
+        # Author-managed plans are not derived from summaries. Seed them before
+        # replay so automation neither duplicates nor silently resolves them.
+        author_foreshadows = [item for item in ForeshadowManager(self.root, self.logger, self.storage)._load()['items']
+                             if item.get('author_managed') or item.get('source') == 'manual']
         for relative, default in self.DEFAULTS.items():
-            self.storage.atomic_write_json(self.root / relative, default)
+            self.storage.atomic_write_json(self.root / relative,
+                {'items': author_foreshadows} if relative == 'foreshadowing.json' else default)
         self.storage.atomic_write_json(
             self.root / "tracking" / "story_clock.json", {"travel_rules": travel_rules, "events": []},
         )

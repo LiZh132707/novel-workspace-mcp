@@ -9,6 +9,28 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.12.0] - 2026-09-10
+
+### Added
+
+- A multilingual Foreshadow Planner in Timeline and Creative Assets, with manual planting, editing, rescheduling, resolution notes, cancellation, and reopening.
+- Project-wide status counters, due-soon and overdue planning windows, priority/tag/text filters, deterministic pagination, evidence panels, and visible-page JSON copying.
+- Author notes, priorities, tags, bounded before/after change history, and optimistic revision checks to reject stale edits.
+- Author-managed lifecycle records that survive derived-state replay and stay under manual control instead of being silently resolved by automatic summaries.
+- MCP `get_foreshadow_board`, `create_foreshadow`, and `update_foreshadow`, sharing the Web planner's validation and lifecycle rules.
+
+### Fixed
+
+- Automatic foreshadow resolution now requires a unique exact ID or text match instead of substring matching, and never precedes introduction.
+- Reopening or cancelling a resolved foreshadow clears stale current resolution metadata while keeping recent history.
+- Invalid statuses, fractional/boolean chapter values, unknown fields, and duplicate open text are rejected without partial edits.
+- New summary-derived IDs remain stable across replay; preview uses the same conservative resolution matching policy.
+- Cancelled foreshadows are no longer mislabeled as pending in the timeline, and the old translation-dependent action buttons now open the shared planner.
+
+### Tests
+
+- Added lifecycle, replay preservation, stale-write, concurrent-writer, due-boundary, filtering, pagination, malformed-metadata, Web/MCP parity, and frontend escaping regression coverage.
+
 ## [2.11.0] - 2026-09-08
 
 ### Added
@@ -204,7 +226,8 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Chapter planning, continuity checks, timeline, facts, foreshadowing, savepoints, recovery, and export workflows.
 - Data-free public repository baseline with local runtime data excluded from Git.
 
-[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.11.0...HEAD
+[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.12.0...HEAD
+[2.12.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.11.0...v2.12.0
 [2.11.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.10.0...v2.11.0
 [2.10.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.9.0...v2.10.0
 [2.9.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.8.0...v2.9.0

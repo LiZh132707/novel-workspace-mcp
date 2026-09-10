@@ -87,13 +87,12 @@ class ChapterChangePreview:
             if item.get("evidence_verified") is False:
                 continue
             text = str(item.get("text", "")).strip()
-            if not text:
+            if not text and not item.get('id'):
                 continue
             action = str(item.get("action") or "introduce")
-            match = next((
-                value for value in reversed(open_items)
-                if text in str(value.get("text", "")) or str(value.get("text", "")) in text
-            ), None)
+            match = self.foreshadows.match_resolution(open_items, item, chapter)
+            if match and match.get('author_managed') and action == 'resolve':
+                match = None
             if action == "resolve":
                 result.append({
                     "category": "foreshadow", "kind_label": "伏笔", "name": text,
@@ -101,7 +100,10 @@ class ChapterChangePreview:
                     "after": "resolved", "action": "change", "risk": "low" if match else "high",
                     "matched_id": match.get("id", "") if match else "",
                 })
-            elif not match:
+            elif action == 'introduce' and not match and not any(
+                value.get('author_managed') and value.get('origin_text', value.get('text')) == text
+                for value in self.foreshadows.list(chapter)
+            ):
                 result.append({
                     "category": "foreshadow", "kind_label": "伏笔", "name": text,
                     "field": "status", "before": "", "after": "open", "action": "create", "risk": "low",

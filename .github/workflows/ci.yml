@@ -52,3 +52,5 @@ jobs:
           node --test tests/backups.test.cjs
           node --check ui/static/modules/manuscript.js
           node --test tests/manuscript.test.cjs
+          node --check ui/static/modules/foreshadows.js
+          node --test tests/foreshadows.test.cjs

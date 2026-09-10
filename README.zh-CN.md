@@ -23,6 +23,12 @@
 
 ## Web 工作台主要能力
 
+### v2.12 伏笔规划台
+
+打开 **时间线 → 伏笔规划台**，手动埋设、编辑、延期、回收、取消或重新打开伏笔。支持到期窗口、状态、优先级、标签和关键词筛选，查看回收目标、证据及最近 50 条变更，并复制当前页 JSON。控件提供中英日文。
+
+手动创建或编辑后，该记录由作者管理：摘要重建保留记录，自动摘要不再自行回收。自动回收仅接受唯一的精确 ID 或文本匹配，避免相似伏笔误关联。MCP 新增 `get_foreshadow_board`、`create_foreshadow`、`update_foreshadow`，编辑支持版本冲突检查。详见 [生命周期规则和调用示例](docs/FORESHADOW_PLANNER.md)。
+
 ### v2.11 全书诊断工作台
 
 打开 **仪表盘 → 全书诊断**，查看章节篇幅趋势、目标完成比例、预计阅读时间、缺章、空章、文件名冲突及跨章重复段落的位置。支持章节范围筛选，以及 JSON / Markdown 报告下载。新控件支持中英日文，结构化发现和导出报告使用英文。
@@ -72,7 +78,7 @@ MCP 使用 `get_style_preset(name, source="custom", include_rendered=True)` 获�
 |------|------|
 | **用户** | 世界观、总纲、人物设定、风格要求、剧情方向 |
 | **AI (LLM)** | 章节生成（默认每章3000字 ≈ 31秒生成）、自动续写、结构化摘要、人物状态更新 |
-| **MCP** | 90 个工具接口、事务性存储、向量检索、上下文裁剪、一致性检查 |
+| **MCP** | 93 个工具接口、事务性存储、向量检索、上下文裁剪、一致性检查 |
 
 ## 模型适配
 
@@ -90,7 +96,15 @@ MCP 使用 `get_style_preset(name, source="custom", include_rendered=True)` 获�
 
 > 请先在 LM Studio 中使用你保存的参数加载 Ornith。项目只启动/连接 LMS API，不覆盖上下文、GPU、CPU专家层、KV、Flash Attention、MTP和聊天模板；连接后会同步实际上下文窗口。
 
-## MCP 工具（90 个）
+## MCP 工具（93 个）
+
+### 伏笔规划新增接口
+
+| 工具 | 用途 |
+| --- | --- |
+| `get_foreshadow_board` | 到期、状态、优先级、标签和关键词筛选及分页 |
+| `create_foreshadow` | 手动创建由作者管理的伏笔计划 |
+| `update_foreshadow` | 编辑、调整目标、回收、取消、重新打开及版本冲突检查 |
 
 ### 📚 项目管理（4 个）
 | 工具 | 功能 | 参数 |
@@ -350,7 +364,7 @@ uv run pytest -q
 
 ```
 novel-workspace-mcp/
-├── novel_server.py          # MCP Server（90 个工具）
+├── novel_server.py          # MCP Server（93 个工具）
 ├── config.py                # 模型配置、上下文预算
 ├── storage_utils.py         # 事务性存储、备份、文件锁
 ├── llm_client.py            # LM Studio API 客户端
