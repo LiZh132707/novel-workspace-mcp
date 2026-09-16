@@ -3,4 +3,5 @@ include scripts/release_notes.py
 include docs/RELEASING.md
 include docs/MANUSCRIPT_DIAGNOSTICS.md
 include docs/FORESHADOW_PLANNER.md
+include docs/FORESHADOW_BATCH.md
 include tests/*.cjs

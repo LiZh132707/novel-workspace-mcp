@@ -14,6 +14,8 @@ The v2.12 planner brings payoff planning and lifecycle editing to **Timeline →
 
 Unedited summary-managed records continue automatic tracking. Resolution requires a unique exact ID match, or a unique exact trimmed text match when no ID is supplied. Matching is case-sensitive; substring guesses are no longer accepted. No automatic resolution may precede introduction, and explicitly unverified evidence is ignored. Unmatched, ambiguous, and author-managed resolution attempts are counted as `unmatched_resolutions`. New summary-derived IDs are deterministic by introduction chapter and exact text, supporting ID-based replay. Legacy IDs are not rewritten until a derived-state rebuild. Preview and ingestion use the same sequential lifecycle reducer, including introduction followed by resolution in one batch. Preview uses the same matching rules and marks unmatched resolution requests as high-risk rather than pretending they applied.
 
+For multi-record changes, ownership filters, quick views, portable reports, and CLI/MCP batch commands, see [Batch planning and reports](FORESHADOW_BATCH.md) (v2.13).
+
 ## Board semantics
 
 The board is a **current planning view, not historical state**. `current_chapter` only supplies a planning clock; it does not reconstruct past statuses. If omitted, the Web/MCP adapters use the current project's chapter.

@@ -22,3 +22,14 @@
 .foreshadow-badge.due_soon { background:#fff1cc; color:#775415; }
 .foreshadow-badge.closed { background:#e5f1e9; color:#315d42; }
 #foreshadowEditorError { color:#a94735; }
+#foreshadowBatchDialog { width:min(950px,95vw); }
+#foreshadowBatchDialog .dialog-card { width:100%; max-width:none; }
+#foreshadowBatchDialog .utility-dialog-body { overflow-wrap:anywhere; }
+#foreshadowBatchDialog p { font-size:13px; line-height:1.6; }
+.foreshadow-select { display:flex; align-items:center; gap:8px; margin:10px 0; }
+.foreshadow-select input { width:auto; }
+.foreshadow-diff { width:100%; border-collapse:collapse; table-layout:fixed; font-size:13px; margin:12px 0; }
+.foreshadow-diff th,.foreshadow-diff td { padding:8px; border:1px solid var(--line); white-space:pre-wrap; vertical-align:top; }
+#foreshadowBatchError { color:#a94735; }
+.foreshadow-download { display:inline-block; padding:10px 16px; border:1px solid var(--line); border-radius:8px; color:var(--ink); text-decoration:none; }
+.foreshadow-download[aria-disabled="true"] { opacity:.5; pointer-events:none; }

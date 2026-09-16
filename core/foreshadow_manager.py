@@ -191,7 +191,7 @@ class ForeshadowManager:
     def create(self, text, introduced_chapter=0, target_chapter=None, priority='normal', tags=None, notes=''):
         """Create an author-managed plan; chapter zero means not yet introduced."""
         self._integer('introduced_chapter', introduced_chapter, 0, 1000000)
-        fields = self._fields(dict(text=text, target_chapter=target_chapter if target_chapter is not None else introduced_chapter + 10,
+        fields = self._fields(dict(text=text, target_chapter=target_chapter if target_chapter is not None else min(1000001, introduced_chapter + 10),
                                    priority=priority, tags=tags if tags is not None else [], notes=notes))
         if fields['target_chapter'] <= introduced_chapter:
             raise ValueError('target_chapter must follow introduced_chapter')
@@ -236,6 +236,12 @@ class ForeshadowManager:
 
     def _update(self, item_id: str, expected_revision=None, **values) -> dict:
         data = self._load()
+        item = self._edit(data, item_id, expected_revision, values)
+        self._save(data)
+        return item
+
+    def _edit(self, data, item_id, expected_revision, values, action='author_update'):
+        """Validate and edit one record in a transaction's private ledger copy."""
         item = next((entry for entry in data["items"] if entry.get("id") == item_id), None)
         if not item:
             raise ValueError('Foreshadow not found')
@@ -266,9 +272,76 @@ class ForeshadowManager:
         item['author_managed'] = True
         item.setdefault('origin_text', before.get('text', ''))
         item['text_aliases'] = sorted(self._aliases(before) | self._aliases(item))
-        self._record(item, before, 'author_update')
-        self._save(data)
+        self._record(item, before, action)
         return item
+
+    def batch_update(self, selection, changes, dry_run=True):
+        """Preview by default; commit every selected edit in one locked write.
+
+        Every ID needs its board revision. A conflict or invalid operation on
+        even the last record aborts the entire batch; no partial writes occur.
+        """
+        if type(dry_run) is not bool:
+            raise ValueError('dry_run must be a boolean')
+        if not isinstance(selection, list) or not 1 <= len(selection) <= 100:
+            raise ValueError('selection must contain 1 to 100 ID/revision pairs')
+        ids = set()
+        for selected in selection:
+            if not isinstance(selected, dict) or set(selected) != {'id', 'expected_revision'}:
+                raise ValueError('Each selection needs exactly id and expected_revision')
+            self._text('id', selected['id'], 200, False)
+            self._integer('expected_revision', selected['expected_revision'], 0, 1000000000)
+            if selected['id'] in ids:
+                raise ValueError('Duplicate selected ID')
+            ids.add(selected['id'])
+        allowed = {'target_chapter', 'target_delta', 'status', 'priority', 'add_tags', 'remove_tags',
+                   'resolved_chapter', 'resolution_note'}
+        if not isinstance(changes, dict) or not changes or set(changes) - allowed:
+            raise ValueError('Provide at least one supported batch change')
+        if 'target_chapter' in changes and 'target_delta' in changes:
+            raise ValueError('Choose target_chapter or target_delta, not both')
+        if 'target_delta' in changes:
+            self._integer('target_delta', changes['target_delta'], -1000000, 1000000)
+        for key in ('add_tags', 'remove_tags'):
+            if key in changes:
+                self._fields({'tags': changes[key]})
+        add_tags = self._fields({'tags': changes.get('add_tags', [])})['tags']
+        remove_tags = self._fields({'tags': changes.get('remove_tags', [])})['tags']
+        if set(add_tags) & set(remove_tags):
+            raise ValueError('A tag cannot be added and removed in the same batch')
+        fields = self._fields({key: value for key, value in changes.items()
+                               if key not in ('target_delta', 'add_tags', 'remove_tags')})
+        with FileLock(str(self.path) + '.transaction.lock', timeout=30):
+            data = deepcopy(self._load())
+            results = []
+            for selected in selection:
+                before = next((item for item in data['items'] if item.get('id') == selected['id']), None)
+                if before is None:
+                    raise ValueError('Foreshadow not found: ' + selected['id'])
+                before = deepcopy(before)
+                values = dict(fields)
+                if 'target_delta' in changes:
+                    target = before.get('target_chapter')
+                    self._integer('existing target_chapter', target, 1)
+                    values['target_chapter'] = target + changes['target_delta']
+                if 'add_tags' in changes or 'remove_tags' in changes:
+                    tags = before.get('tags', [])
+                    self._fields({'tags': tags})
+                    values['tags'] = list(dict.fromkeys([tag for tag in tags if tag not in remove_tags] + add_tags))
+                values = self._fields(values)
+                after = self._edit(data, selected['id'], selected['expected_revision'], values, 'author_batch')
+                tracked = ('target_chapter', 'status', 'priority', 'tags', 'resolved_chapter',
+                           'resolution_note', 'author_managed')
+                diff = {key: {'before': before.get(key), 'after': after.get(key)}
+                        for key in tracked if before.get(key) != after.get(key)}
+                results.append({'id': selected['id'], 'text': after.get('text', ''),
+                                'previous_revision': self._chapter_number(before.get('revision')),
+                                'revision': self._chapter_number(after.get('revision')), 'changes': diff})
+            changed = sum(bool(result['changes']) for result in results)
+            if not dry_run and changed:
+                self._save(data)
+            return {'dry_run': dry_run, 'selected': len(selection), 'changed': changed,
+                    'applied': not dry_run and bool(changed), 'items': results}
 
     def delete(self, item_id: str) -> bool:
         with FileLock(str(self.path) + ".transaction.lock", timeout=30):
@@ -299,11 +372,20 @@ class ForeshadowManager:
             return 0
 
     def board(self, current_chapter=0, status='all', due='all', query='', tag='', priority='all',
-              due_within=5, offset=0, limit=50):
-        self._integer('current_chapter', current_chapter, 0, 1000000)
-        self._integer('due_within', due_within, 0, 1000000)
+              due_within=5, offset=0, limit=50, ownership='all'):
         self._integer('offset', offset, 0, 1000000)
         self._integer('limit', limit, 1, 100)
+        view = self._board_view(current_chapter, status, due, query, tag, priority, due_within, ownership)
+        items = view['items']
+        return {**view, 'items': items[offset:offset + limit], 'offset': offset, 'limit': limit,
+                'has_more': offset + limit < len(items)}
+
+    def _board_view(self, current_chapter=0, status='all', due='all', query='', tag='', priority='all',
+                    due_within=5, ownership='all'):
+        self._integer('current_chapter', current_chapter, 0, 1000000)
+        self._integer('due_within', due_within, 0, 1000000)
+        if ownership not in ('all', 'author', 'summary'):
+            raise ValueError('Invalid ownership filter')
         if status not in ('all', 'open', 'resolved', 'cancelled'):
             raise ValueError('Invalid status filter')
         if due not in ('all', 'overdue', 'due_soon', 'scheduled', 'unplanned', 'closed'):
@@ -331,15 +413,34 @@ class ForeshadowManager:
             item['priority'] = item.get('priority') if item.get('priority') in ('low', 'normal', 'high') else 'normal'
             item['tags'] = [t for t in item.get('tags', []) if isinstance(t, str)] if isinstance(item.get('tags', []), list) else []
             item['revision'] = self._chapter_number(item.get('revision'))
+            item['author_managed'] = self._author_managed(item)
             all_tags.update(item['tags'])
         filtered = [i for i in items if (status == 'all' or i.get('status') == status)
                     and (due == 'all' or i['due_state'] == due)
                     and (priority == 'all' or i['priority'] == priority)
+                    and (ownership == 'all' or i['author_managed'] == (ownership == 'author'))
                     and (not tag or tag in [t.casefold() for t in i['tags']])
                     and (not query or query in ' '.join(str(i.get(k, '')) for k in ('text', 'notes', 'evidence', 'tags')).casefold())]
         order = {'overdue': 0, 'due_soon': 1, 'scheduled': 2, 'unplanned': 3, 'closed': 4}
         filtered.sort(key=lambda i: (order[i['due_state']], {'high': 0, 'normal': 1, 'low': 2}[i['priority']],
                                     self._chapter_number(i.get('target_chapter')), str(i.get('id', ''))))
-        return dict(summary=summary, items=filtered[offset:offset + limit], total_matches=len(filtered),
-                    offset=offset, limit=limit, has_more=offset + limit < len(filtered), tags=sorted(all_tags),
+        return dict(summary=summary, items=filtered, total_matches=len(filtered), tags=sorted(all_tags),
                     current_chapter=current_chapter, due_within=due_within)
+
+    def report(self, current_chapter=0, status='all', due='all', query='', tag='', priority='all',
+               due_within=5, ownership='all', max_items=1000, include_notes=False):
+        """Export one consistent filtered snapshot, not repeated paginated reads."""
+        self._integer('max_items', max_items, 1, 5000)
+        if type(include_notes) is not bool:
+            raise ValueError('include_notes must be a boolean')
+        view = self._board_view(current_chapter, status, due, query, tag, priority, due_within, ownership)
+        fields = ('id', 'text', 'introduced_chapter', 'target_chapter', 'status', 'priority', 'tags',
+                  'due_state', 'remaining_chapters', 'revision', 'author_managed', 'resolved_chapter')
+        if include_notes:
+            fields += ('notes', 'evidence', 'resolution_note')
+        items = [{key: item[key] for key in fields if key in item} for item in view['items'][:max_items]]
+        return {'schema_version': 1, 'current_chapter': current_chapter, 'summary': view['summary'],
+                'filters': dict(status=status, due=due, query=query, tag=tag, priority=priority,
+                                due_within=due_within, ownership=ownership),
+                'total_matches': view['total_matches'], 'exported': len(items), 'max_items': max_items,
+                'complete': len(items) == view['total_matches'], 'include_notes': include_notes, 'items': items}

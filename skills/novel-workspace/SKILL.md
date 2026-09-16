@@ -15,6 +15,14 @@ Use the project's MCP tools as the source of truth for novel state. Keep generat
 - After meaningful changes, run `check_consistency`, inspect quality issues, and update character, timeline, fact, and foreshadowing records through their MCP tools.
 - When revising published history, use the history-revision/planning-impact workflow so downstream summaries and state ledgers are rebuilt instead of editing derived files directly.
 
+## Batch foreshadow planning
+
+- Read `get_foreshadow_board` with the requested filters and use its IDs and revisions, not inferred names. Ownership can be `author`, `summary`, or `all`; pagination is explicit.
+- Use `batch_update_foreshadows(selection=[{"id":"...","expected_revision":1}], changes={"target_delta":3}, dry_run=true)` to inspect changes before applying the user-requested operation. A batch supports up to 100 selected records and commits all or none. `dry_run=false` applies the same reviewed selection and changes; conflicts require rereading and reviewing, not dropping revision checks.
+- Applied edits transfer lifecycle control to the author. Relative shifts preserve spacing; absolute targets set every selected record to the same deadline. Tags are arrays, not comma-split text.
+- `export_foreshadow_report` spans pages. Check `complete` and `total_matches`; increase `max_items` (up to 5000) or narrow filters if incomplete. Notes/evidence are opt-in, but text and tags can still contain private story details. Exporting does not authorize publishing those contents.
+- Without MCP, `novel-workspace foreshadows list|export|batch --novel NAME` provides the same engine. Batch JSON files contain `selection` and `changes`; the command previews unless `--apply` is explicitly supplied.
+
 ## Model providers
 
 The server supports both local LM Studio and remote OpenAI-compatible APIs. Select the backend with environment variables before starting the server:

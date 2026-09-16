@@ -23,6 +23,12 @@
 
 ## Web 工作台主要能力
 
+### v2.13 批量规划与报告
+
+支持多选伏笔，先预览逐项差异，再一次性顺延或设置目标章节、调整优先级、回收/取消/重新打开、增删标签。每条记录均校验版本，任一冲突拒绝整批修改。新增作者/摘要管理筛选和快捷视图。
+
+可按已应用筛选导出跨页 JSON / Markdown 报告，备注和证据默认排除，超限明确提示。新增 CLI `novel-workspace foreshadows list|export|batch`、两个 MCP 工具和 Skill 操作指引，不调用模型、不修改正文。详见 [批量操作、命令和导出限制](docs/FORESHADOW_BATCH.md)。
+
 ### v2.12 伏笔规划台
 
 打开 **时间线 → 伏笔规划台**，手动埋设、编辑、延期、回收、取消或重新打开伏笔。支持到期窗口、状态、优先级、标签和关键词筛选，查看回收目标、证据及最近 50 条变更，并复制当前页 JSON。控件提供中英日文。
@@ -78,7 +84,7 @@ MCP 使用 `get_style_preset(name, source="custom", include_rendered=True)` 获�
 |------|------|
 | **用户** | 世界观、总纲、人物设定、风格要求、剧情方向 |
 | **AI (LLM)** | 章节生成（默认每章3000字 ≈ 31秒生成）、自动续写、结构化摘要、人物状态更新 |
-| **MCP** | 93 个工具接口、事务性存储、向量检索、上下文裁剪、一致性检查 |
+| **MCP** | 95 个工具接口、事务性存储、向量检索、上下文裁剪、一致性检查 |
 
 ## 模型适配
 
@@ -364,7 +370,7 @@ uv run pytest -q
 
 ```
 novel-workspace-mcp/
-├── novel_server.py          # MCP Server（93 个工具）
+├── novel_server.py          # MCP Server（95 个工具）
 ├── config.py                # 模型配置、上下文预算
 ├── storage_utils.py         # 事务性存储、备份、文件锁
 ├── llm_client.py            # LM Studio API 客户端

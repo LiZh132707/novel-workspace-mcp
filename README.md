@@ -29,6 +29,12 @@ Source checkouts keep runtime data under the repository for portable local devel
 
 ## What it does
 
+### Batch planning and reports (v2.13)
+
+Select foreshadows, preview per-record changes, then atomically reschedule, resolve, reopen, reprioritize, or retag the whole selection. Every selected revision is checked; one conflict cancels the batch. Ownership filters and quick views help separate author plans from automatic tracking.
+
+Export **all filtered matches** as JSON or Markdown, with notes/evidence opt-in and explicit completeness limits. The same engine is available through `novel-workspace foreshadows list|export|batch`, two new MCP tools, and the bundled Skill. No model calls or chapter rewrites are required. See [batch workflow, CLI examples, and report limits](docs/FORESHADOW_BATCH.md).
+
 ### Foreshadow planner (v2.12)
 
 Open **Timeline → Foreshadow planner** to plant, edit, reschedule, resolve, cancel, or reopen a foreshadow. Use due-window, status, priority, tag, and text filters; inspect payoff deadlines, evidence, and the last 50 changes. The planner supports English, Chinese, and Japanese and can copy the visible page as JSON.

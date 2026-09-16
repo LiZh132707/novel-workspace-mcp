@@ -39,6 +39,9 @@ jobs:
           novel-workspace config --json
           novel-workspace skill-path --json
           novel-workspace backup --json
+          novel-workspace foreshadows list --help
+          novel-workspace foreshadows export --help
+          novel-workspace foreshadows batch --help
 
       - name: Validate frontend JavaScript
         run: |

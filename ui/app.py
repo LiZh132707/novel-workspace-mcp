@@ -19,7 +19,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from fastapi import FastAPI, Request, Form, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -2416,13 +2416,13 @@ async def api_foreshadowing(name: str):
 @app.get('/api/novels/{name}/foreshadow-board')
 async def api_foreshadow_board(name: str, current_chapter: int | None = None, status: str = 'all',
                                due: str = 'all', query: str = '', tag: str = '', priority: str = 'all',
-                               due_within: int = 5, offset: int = 0, limit: int = 50):
+                               due_within: int = 5, offset: int = 0, limit: int = 50, ownership: str = 'all'):
     nm = get_novel_manager(name)
     try:
         board = await asyncio.to_thread(ForeshadowManager(nm.path, logger, storage_mgr).board,
             current_chapter=nm.get_current_chapter() if current_chapter is None else current_chapter,
             status=status, due=due, query=query, tag=tag, priority=priority,
-            due_within=due_within, offset=offset, limit=limit)
+            due_within=due_within, offset=offset, limit=limit, ownership=ownership)
         return JSONResponse({'success': True, 'board': board}, headers={'Cache-Control': 'no-store'})
     except (ValueError, OSError) as exc:
         return JSONResponse({'success': False, 'error': str(exc)}, status_code=400)
@@ -2438,6 +2438,46 @@ async def api_create_foreshadow(name: str, request: Request):
         item = await asyncio.to_thread(ForeshadowManager(nm.path, logger, storage_mgr).create, **payload)
         return {'success': True, 'item': item}
     except (ValueError, TypeError, OSError) as exc:
+        return JSONResponse({'success': False, 'error': str(exc)}, status_code=400)
+
+
+@app.post('/api/novels/{name}/foreshadow-batch')
+async def api_foreshadow_batch(name: str, request: Request):
+    nm = get_novel_manager(name)
+    try:
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise ValueError('Expected a JSON object')
+        result = await asyncio.to_thread(ForeshadowManager(nm.path, logger, storage_mgr).batch_update, **payload)
+        return JSONResponse({'success': True, 'result': result}, headers={'Cache-Control': 'no-store'})
+    except (ValueError, TypeError, OSError) as exc:
+        return JSONResponse({'success': False, 'error': str(exc)}, status_code=400)
+
+
+@app.get('/api/novels/{name}/foreshadow-report')
+async def api_foreshadow_report(name: str, current_chapter: int | None = None, status: str = 'all',
+                                due: str = 'all', query: str = '', tag: str = '', priority: str = 'all',
+                                due_within: int = 5, ownership: str = 'all', max_items: int = 1000,
+                                include_notes: bool = False, format: str = 'json'):
+    from core.foreshadow_report import render_foreshadow_report
+    nm = get_novel_manager(name)
+    try:
+        if format not in ('json', 'markdown'):
+            raise ValueError('format must be json or markdown')
+        report = await asyncio.to_thread(ForeshadowManager(nm.path, logger, storage_mgr).report,
+            current_chapter=nm.get_current_chapter() if current_chapter is None else current_chapter,
+            status=status, due=due, query=query, tag=tag, priority=priority, due_within=due_within,
+            ownership=ownership, max_items=max_items, include_notes=include_notes)
+        # Never disguise a truncated browser download as a complete report.
+        if not report['complete']:
+            return JSONResponse({'success': False, 'error': 'Export limit exceeded; narrow filters or increase max_items (up to 5000).',
+                                 'total_matches': report['total_matches']}, status_code=400)
+        body = json.dumps(report, ensure_ascii=False, indent=2) if format == 'json' else render_foreshadow_report(report)
+        extension = 'json' if format == 'json' else 'md'
+        return Response(body, media_type='application/json' if format == 'json' else 'text/markdown',
+            headers={'Cache-Control': 'no-store', 'Content-Disposition': f'attachment; filename="foreshadow-report.{extension}"',
+                     'X-Content-Type-Options': 'nosniff'})
+    except (ValueError, OSError) as exc:
         return JSONResponse({'success': False, 'error': str(exc)}, status_code=400)
 
 

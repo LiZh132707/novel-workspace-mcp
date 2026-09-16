@@ -1,3 +1,3 @@
 """Single source of truth for the application version."""
 
-__version__ = "2.12.1"
+__version__ = "2.13.0"

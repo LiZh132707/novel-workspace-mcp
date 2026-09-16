@@ -24,6 +24,7 @@ from core.character_evolution import CharacterEvolutionTracker
 from core.style_preset import StylePresetManager
 from core.fact_manager import FactManager
 from core.foreshadow_manager import ForeshadowManager
+from core.foreshadow_schema import BATCH_SCHEMA, REPORT_SCHEMA
 from core.change_review_manager import ChangeReviewManager
 from core.export_manager import ExportManager
 from core.entity_ledger import EntityLedger
@@ -139,11 +140,14 @@ app = Server(SERVER_NAME)
 @app.list_tools()
 async def list_tools():
     return [
+        types.Tool(name='batch_update_foreshadows', description='Preview or atomically apply up to 100 selected foreshadow edits. Requires each current board revision. Shift/set deadlines, change priority/status and add/remove tags. Preview defaults to true; stale or invalid records abort the whole batch. Applied records become author-managed.', inputSchema=BATCH_SCHEMA),
+        types.Tool(name='export_foreshadow_report', description='Export a single filtered planning snapshot across pages. Notes/evidence are excluded unless requested; text/tags can still be private. Check complete and total_matches: max_items defaults to 1000, capped at 5000. No model calls or edits.', inputSchema=REPORT_SCHEMA),
         types.Tool(name='get_foreshadow_board', description='Filter and paginate foreshadows by due window, status, priority, tag and text. Summary counts cover the whole project. This is a planning view, not a historical snapshot.', inputSchema={
             'type': 'object', 'properties': {'current_chapter': {'type': 'integer', 'minimum': 0},
             'status': {'type': 'string', 'enum': ['all', 'open', 'resolved', 'cancelled']},
             'due': {'type': 'string', 'enum': ['all', 'overdue', 'due_soon', 'scheduled', 'unplanned', 'closed']},
             'query': {'type': 'string'}, 'tag': {'type': 'string'},
+            'ownership': {'type': 'string', 'enum': ['all', 'author', 'summary']},
             'priority': {'type': 'string', 'enum': ['all', 'low', 'normal', 'high']},
             'due_within': {'type': 'integer', 'minimum': 0}, 'offset': {'type': 'integer', 'minimum': 0},
             'limit': {'type': 'integer', 'minimum': 1, 'maximum': 100}}, 'required': []}),
@@ -516,10 +520,17 @@ async def list_facts(limit=50):
 async def list_foreshadowing():
     return json.dumps(fsh_().list(nm().get_current_chapter()), ensure_ascii=False, indent=2)
 
-async def get_foreshadow_board(current_chapter=None, status='all', due='all', query='', tag='', priority='all', due_within=5, offset=0, limit=50):
+async def get_foreshadow_board(current_chapter=None, status='all', due='all', query='', tag='', priority='all', due_within=5, offset=0, limit=50, ownership='all'):
     current = nm().get_current_chapter() if current_chapter is None else current_chapter
     return json.dumps(await asyncio.to_thread(fsh_().board, current_chapter=current, status=status, due=due,
-        query=query, tag=tag, priority=priority, due_within=due_within, offset=offset, limit=limit), ensure_ascii=False, indent=2)
+        query=query, tag=tag, priority=priority, due_within=due_within, offset=offset, limit=limit, ownership=ownership), ensure_ascii=False, indent=2)
+
+async def batch_update_foreshadows(selection, changes, dry_run=True):
+    return json.dumps(await asyncio.to_thread(fsh_().batch_update, selection, changes, dry_run=dry_run), ensure_ascii=False, indent=2)
+
+async def export_foreshadow_report(current_chapter=None, **options):
+    current = nm().get_current_chapter() if current_chapter is None else current_chapter
+    return json.dumps(await asyncio.to_thread(fsh_().report, current_chapter=current, **options), ensure_ascii=False, indent=2)
 
 async def create_foreshadow(text, introduced_chapter=0, target_chapter=None, priority='normal', tags=None, notes=''):
     return json.dumps(await asyncio.to_thread(fsh_().create, text, introduced_chapter, target_chapter, priority, tags, notes), ensure_ascii=False, indent=2)
@@ -827,6 +838,8 @@ HANDLERS = {
     'get_foreshadow_board': get_foreshadow_board,
     'create_foreshadow': create_foreshadow,
     'update_foreshadow': update_foreshadow,
+    'batch_update_foreshadows': batch_update_foreshadows,
+    'export_foreshadow_report': export_foreshadow_report,
     'get_story_logic': get_story_logic,
     'get_causal_graph': get_causal_graph,
     'propose_causal_repairs': propose_causal_repairs,

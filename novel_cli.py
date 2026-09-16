@@ -197,10 +197,15 @@ def bundled_skill_path() -> Path:
 
 
 def manuscript_report(novel_name, **options):
+    from core.manuscript_diagnostics import inspect_manuscript
+
+    return inspect_manuscript(_registered_novel_path(novel_name), **options)
+
+
+def _registered_novel_path(novel_name):
     import config
     import re
     from core.workspace_manager import WorkspaceManager
-    from core.manuscript_diagnostics import inspect_manuscript
 
     workspace = WorkspaceManager(logging.getLogger("novel-workspace.inspect"))
     if not re.fullmatch(r"[\w\-]+", novel_name) or novel_name not in workspace.data["novels"]:
@@ -209,7 +214,71 @@ def manuscript_report(novel_name, **options):
     path = root / novel_name
     if path.is_symlink() or path.resolve().parent != root:
         raise ValueError("Novel path must remain inside the novels directory")
-    return inspect_manuscript(path, **options)
+    if not path.is_dir():
+        raise ValueError('Novel directory is missing')
+    return path
+
+
+def _write_new_report(output, body):
+    """Atomically publish a new file without overwriting another file or project."""
+    import config
+    import os
+    import tempfile
+
+    output = output.resolve()
+    for protected in (config.STORAGE_ROOT.resolve(), config.NOVELS_ROOT.resolve()):
+        if output == protected or protected in output.parents:
+            raise ValueError('Reports must be written outside runtime storage')
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=output.parent, delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(body)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(temporary, output)  # Atomic create; fails if the destination exists.
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def _foreshadow_command(args):
+    from core.foreshadow_manager import ForeshadowManager
+    from core.foreshadow_report import render_foreshadow_report
+    from core.novel_manager import NovelManager
+
+    try:
+        path = _registered_novel_path(args.novel)
+        logger = logging.getLogger('novel-workspace.foreshadows')
+        manager = ForeshadowManager(path, logger)
+        if args.action == 'batch':
+            with args.file.open('rb') as stream:
+                raw = stream.read(1024 * 1024 + 1)
+            if len(raw) > 1024 * 1024:
+                raise ValueError('Batch request exceeds 1 MiB')
+            request = json.loads(raw.decode('utf-8-sig'))
+            if not isinstance(request, dict) or set(request) != {'selection', 'changes'}:
+                raise ValueError('Batch file must contain exactly selection and changes; use --apply to commit')
+            report = manager.batch_update(**request, dry_run=not args.apply)
+        else:
+            options = {key: getattr(args, key) for key in (
+                'status', 'due', 'priority', 'query', 'tag', 'due_within', 'ownership')}
+            options['current_chapter'] = (NovelManager(args.novel, path, logger).get_current_chapter()
+                                          if args.current_chapter is None else args.current_chapter)
+            if args.action == 'list':
+                report = manager.board(**options, offset=args.offset, limit=args.limit)
+            else:
+                report = manager.report(**options, max_items=args.max_items, include_notes=args.include_notes)
+        body = (render_foreshadow_report(report) if args.action == 'export' and args.format == 'markdown'
+                else json.dumps(report, ensure_ascii=False, indent=2))
+        if args.action == 'export' and args.output:
+            _write_new_report(args.output, body)
+        else:
+            print(body)
+        return 0 if report.get('complete', True) else 2
+    except (OSError, ValueError, TypeError) as exc:
+        print(json.dumps({'success': False, 'error': str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -247,11 +316,38 @@ def build_parser() -> argparse.ArgumentParser:
     inspect.add_argument("--output", type=Path, help="write a NEW report file outside runtime storage")
     skill_path = commands.add_parser("skill-path", help="print the bundled Codex Skill directory")
     skill_path.add_argument("--json", action="store_true", help="emit JSON for scripts")
+    foreshadows = commands.add_parser('foreshadows', help='filter, export and batch-edit foreshadow plans without AI')
+    actions = foreshadows.add_subparsers(dest='action', required=True)
+    for action in ('list', 'export', 'batch'):
+        sub = actions.add_parser(action)
+        sub.add_argument('--novel', required=True, help='exact registered project name')
+        if action == 'batch':
+            sub.add_argument('--file', type=Path, required=True, help='JSON selection/changes file (up to 1 MiB)')
+            sub.add_argument('--apply', action='store_true', help='commit the batch; otherwise only preview')
+            continue
+        sub.add_argument('--current-chapter', type=int)
+        sub.add_argument('--status', default='all', choices=['all', 'open', 'resolved', 'cancelled'])
+        sub.add_argument('--due', default='all', choices=['all', 'overdue', 'due_soon', 'scheduled', 'unplanned', 'closed'])
+        sub.add_argument('--priority', default='all', choices=['all', 'high', 'normal', 'low'])
+        sub.add_argument('--ownership', default='all', choices=['all', 'author', 'summary'])
+        sub.add_argument('--query', default='')
+        sub.add_argument('--tag', default='')
+        sub.add_argument('--due-within', type=int, default=5)
+        if action == 'list':
+            sub.add_argument('--offset', type=int, default=0)
+            sub.add_argument('--limit', type=int, default=50)
+        else:
+            sub.add_argument('--max-items', type=int, default=1000)
+            sub.add_argument('--include-notes', action='store_true')
+            sub.add_argument('--format', choices=['json', 'markdown'], default='json')
+            sub.add_argument('--output', type=Path, help='write a NEW file outside runtime storage')
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == 'foreshadows':
+        return _foreshadow_command(args)
     if args.command == "serve":
         import uvicorn
 

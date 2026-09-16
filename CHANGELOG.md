@@ -9,6 +9,26 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Expand English and Japanese coverage for dynamically generated task messages.
 - Add more provider adapters and real-user integration reports.
 
+## [2.13.0] - 2026-09-16
+
+### Added
+
+- Batch foreshadow planning: shift or set deadlines, change priorities and lifecycle status, add/remove tags, and set or clear resolution metadata in one atomic operation.
+- Per-record before/after previews, mandatory revision checks for every selected record, and all-or-nothing commits. Editing preview inputs invalidates the reviewed operation.
+- Web page selection, ownership filters, and quick views for overdue plans, upcoming payoffs, high-priority open records, and author-managed plans, with English, Chinese, and Japanese controls.
+- Filtered JSON and Markdown reports spanning pages, with optional notes/evidence, explicit result limits, and privacy-conscious defaults. Web downloads reject incomplete reports.
+- The `novel-workspace foreshadows list|export|batch` CLI, including preview-by-default batch files, explicit `--apply`, atomic new-file exports, and a distinct partial-export exit code.
+- MCP `batch_update_foreshadows` and `export_foreshadow_report`, plus updated bundled Skill guidance. The tool catalog now contains 95 tools.
+
+### Fixed
+
+- Creating a plan at the highest supported introduction chapter now chooses a valid default target instead of failing validation.
+- Legacy records marked with `source=manual` are consistently classified as author-managed in board filters and reports.
+
+### Tests
+
+- Added batch atomicity, stale-write, concurrent-writer, validation-boundary, no-op, lifecycle, tag-merge, single-snapshot export, privacy, Markdown escaping, CLI, Web/MCP parity, and frontend regression coverage.
+
 ## [2.12.1] - 2026-09-10
 
 ### Fixed
@@ -242,7 +262,8 @@ All notable changes to Novel Workspace MCP are documented here. The format follo
 - Chapter planning, continuity checks, timeline, facts, foreshadowing, savepoints, recovery, and export workflows.
 - Data-free public repository baseline with local runtime data excluded from Git.
 
-[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.12.1...HEAD
+[Unreleased]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.13.0...HEAD
+[2.13.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.12.1...v2.13.0
 [2.12.1]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.12.0...v2.12.1
 [2.12.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.11.0...v2.12.0
 [2.11.0]: https://github.com/LiZh132707/novel-workspace-mcp/compare/v2.10.0...v2.11.0
