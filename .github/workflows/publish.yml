@@ -71,4 +71,4 @@ jobs:
           name: python-distributions
           path: dist/
       - name: Publish to PyPI with trusted publishing
-        uses: pypa/gh-action-pypi-publish@v1.14.2
+        uses: pypa/gh-action-pypi-publish@v1.14.3
